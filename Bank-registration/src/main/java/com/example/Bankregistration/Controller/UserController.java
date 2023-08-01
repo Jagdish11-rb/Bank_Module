@@ -2,7 +2,7 @@ package com.example.Bankregistration.Controller;
 
 import com.example.Bankregistration.Entity.ApiPartner;
 import com.example.Bankregistration.Entity.UserBankDetails;
-import com.example.Bankregistration.Model.Request.PasswordChangeRequest;
+import com.example.Bankregistration.Pojo.PasswordChangeRequest;
 import com.example.Bankregistration.Model.Request.UserLoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
 import com.example.Bankregistration.Model.Response.UserResponse;

@@ -1,4 +1,4 @@
-package com.example.Bankregistration.Model.Request;
+package com.example.Bankregistration.Pojo;
 
 import lombok.Data;
 
