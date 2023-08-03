@@ -11,8 +11,7 @@ import java.time.LocalDateTime;
 public class ForgotPasswordOtpProperties {
 
     @Id
-    private String uniqueId;
-    private String user_id;
+    private String Id;
     private String otp;
     private LocalDateTime generatedTime;
     private LocalDateTime expiry;
