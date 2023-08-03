@@ -71,21 +71,10 @@ public class UserUpdateController {
         }
     }
 
-//    @GetMapping("send-email-sample")
-//    public ResponseEntity<?> sendEmail(@RequestBody String email){
-//        emailService.sendSimpleEmail(email,"Hello","Hiii");
-//        return new ResponseEntity<>("Sent successfully.", HttpStatus.ACCEPTED);
-//    }
-
     @PostMapping("/user/send-forgot-password-otp")
-    public ResponseEntity<?> sendForgotPasswordOtp(HttpServletRequest httpServletRequest) {
+    public ResponseEntity<?> sendForgotPasswordOtp(@RequestBody String user_id) {
         try {
-            String token = jwtGenerator.getTokenFromAuthorization(httpServletRequest);
-            boolean isValid = jwtGenerator.validateToken(token);
-            if (isValid == true) {
-                Claims claims = jwtGenerator.getDataFromToken(token);
-                UserProperties properties = userService.findUserById(claims.getId());
-                log.info(String.valueOf(properties));
+                UserProperties properties = userService.findUserById(user_id);
                 if(properties!=null){
                     String otp = userService.getOtpForForgotPassword(properties);
                     emailService.sendSimpleEmail(properties,otp);
@@ -93,9 +82,6 @@ public class UserUpdateController {
                 }else{
                     throw new UserNotFoundException("User not found.");
                 }
-            } else {
-                return new ResponseEntity<>("Invalid token", HttpStatus.NOT_ACCEPTABLE);
-            }
         } catch (Exception e) {
             return new ResponseEntity<>("Exception occured while sending forgot password otp. Reason : "+e.getMessage(), HttpStatus.CONFLICT);
         }
