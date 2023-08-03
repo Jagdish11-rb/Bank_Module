@@ -23,6 +23,7 @@ import org.springframework.web.bind.UnsatisfiedServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 
 @RestController
 @Slf4j
@@ -84,6 +85,22 @@ public class UserUpdateController {
                 }
         } catch (Exception e) {
             return new ResponseEntity<>("Exception occured while sending forgot password otp. Reason : "+e.getMessage(), HttpStatus.CONFLICT);
+        }
+    }
+
+    @PostMapping("/user/verify-forgot-password-otp")
+    public ResponseEntity<?> changePasswordUsingOtp(@RequestBody String otp,@RequestHeader("user_id") String user_id){
+        try{
+            HashMap<Integer,String> map= userService.validateOtp(otp,user_id);
+            if(map.containsKey(0)){
+                return new ResponseEntity<>(map.get(0),HttpStatus.ACCEPTED);
+            } else if(map.containsKey(1)){
+                return new ResponseEntity<>(map.get(1),HttpStatus.REQUEST_TIMEOUT);
+            } else{
+                return new ResponseEntity<>(map.get(-1),HttpStatus.NOT_ACCEPTABLE);
+            }
+        }catch(Exception e){
+            return new ResponseEntity<>("Exception occured.  Reason :"+e.getMessage(),HttpStatus.CONFLICT);
         }
     }
 }

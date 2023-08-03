@@ -18,11 +18,13 @@ import com.example.Bankregistration.Service.BackGroundService;
 import com.example.Bankregistration.Service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 @Service
@@ -204,8 +206,12 @@ public class UserServiceImpl implements UserService {
     public String getOtpForForgotPassword(UserProperties properties) {
         ForgotPasswordOtpProperties forgotPasswordOtpEntity = new ForgotPasswordOtpProperties();
 
-        forgotPasswordOtpEntity.setUser_id(properties.getUser_id());
-        forgotPasswordOtpEntity.setUniqueId(backGroundService.generateUniqueId(properties.getUser_name().substring(0,2)));
+        Optional<ForgotPasswordOtpProperties> previousOtp = otpRepository.findById(properties.getUser_id());
+        if(!previousOtp.isEmpty()){
+            otpRepository.deleteById(properties.getUser_id());
+        }
+
+        forgotPasswordOtpEntity.setId(properties.getUser_id());
         forgotPasswordOtpEntity.setOtp(backGroundService.generateOtp());
         forgotPasswordOtpEntity.setGeneratedTime(LocalDateTime.now());
         forgotPasswordOtpEntity.setExpiry(forgotPasswordOtpEntity.getGeneratedTime().plusMinutes(5));
@@ -215,4 +221,25 @@ public class UserServiceImpl implements UserService {
         return forgotPasswordOtpEntity.getOtp();
     }
 
+    @Override
+    public HashMap<Integer,String> validateOtp(String otp,String user_id) {
+        HashMap<Integer, String> map = new HashMap<>();
+        ForgotPasswordOtpProperties otpProperties = otpRepository.findById(user_id).orElse(null);
+        if(otpProperties!=null){
+            if(!(otpProperties.getOtp().matches(otp))){
+                map.clear();
+                map.put(-1,"Incorrect OTP.");
+            }else{
+                map.clear();
+                if(otpProperties.getExpiry().isBefore(LocalDateTime.now())){
+                    map.put(1,"OTP Expired.");
+                }else{
+                    map.put(0,"OTP verified.");
+                }
+            }
+        }else{
+            map.put(-1,"Invalid credentials.");
+        }
+        return map;
+    }
 }

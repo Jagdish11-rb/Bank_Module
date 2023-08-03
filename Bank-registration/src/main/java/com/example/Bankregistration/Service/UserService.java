@@ -43,4 +43,7 @@ public interface UserService {
     void validateBankDetails(UserRequest userRequest);
 
     String getOtpForForgotPassword(UserProperties properties);
+
+    HashMap<Integer,String> validateOtp(String otp,String user_id);
+
 }
