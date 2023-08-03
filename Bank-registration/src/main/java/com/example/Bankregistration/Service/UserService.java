@@ -1,7 +1,8 @@
 package com.example.Bankregistration.Service;
 
 import com.example.Bankregistration.Entity.ApiPartner;
-import com.example.Bankregistration.Entity.UserBankDetails;
+import com.example.Bankregistration.Entity.UserBankProperties;
+import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.Model.Request.UserLoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
 import io.jsonwebtoken.Claims;
@@ -21,21 +22,25 @@ public interface UserService {
 
     List<String> findAllOnboardedUsers();
 
+    UserBankProperties prepareBankDetails(UserRequest userRequest, UserProperties properties);
+
     String getApiUser();
 
-    UserBankDetails authenticateRequest(UserLoginRequest loginRequest);
+    UserProperties authenticateRequest(UserLoginRequest loginRequest);
 
-    Map<String, String> generateToken(UserLoginRequest loginRequest);
 
-    UserBankDetails getUserDetails(String apiUserId);
+    UserProperties getproperties(String apiUserId);
     
-    UserBankDetails findUserByMobNumber(String mobileNumber);
+    UserProperties findUserByMobNumber(String mobileNumber);
 
-    UserBankDetails saveUser(UserBankDetails user);
+    UserProperties saveUser(UserProperties user);
 
-    boolean validateToken(HttpServletRequest httpServletRequest);
 
-    Claims getDataFromToken(HttpServletRequest httpServletRequest);
+    UserProperties findUserById(String id);
 
-    UserBankDetails findUserById(String id);
+    UserProperties findUserByEmail(String email);
+
+    void validateBankDetails(UserRequest userRequest);
+
+    String getOtpForForgotPassword(UserProperties properties);
 }

@@ -23,18 +23,10 @@ public interface AdminService{
 
     Object generateToken(AdminRequest adminRequest);
 
-    String getTokenFromAuthorization(HttpServletRequest httpServletRequest);
-
-    boolean isTokenExpired(String auth);
-
-    Claims getDataFromToken(String auth);
-
-    boolean validateToken(String token);
-
     List<String> getAllApiUsersOfAnAdmin(String id);
 
     ApiPartner findApiUserByName(String s);
-    
+
 
     void removeAdmin(Admin admin);
 

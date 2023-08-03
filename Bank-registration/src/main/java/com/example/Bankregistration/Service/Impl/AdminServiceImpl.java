@@ -107,26 +107,6 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public String getTokenFromAuthorization(HttpServletRequest httpServletRequest) {
-        return jwtGenerator.getTokenFromAuthorization(httpServletRequest);
-    }
-
-    @Override
-    public boolean isTokenExpired(String auth) {
-        return jwtGenerator.isTokenExpired(auth);
-    }
-
-    @Override
-    public Claims getDataFromToken(String auth) {
-        return jwtGenerator.getDataFromToken(auth);
-    }
-
-    @Override
-    public boolean validateToken(String token) {
-        return jwtGenerator.validateToken(token);
-    }
-
-    @Override
     public List<String> getAllApiUsersOfAnAdmin(String id) {
         List<String> apiList = apiService.getAllApiUsersOfAdmin(id);
         return apiList;
