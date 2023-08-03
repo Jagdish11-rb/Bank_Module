@@ -14,4 +14,10 @@ public class UserRequest {
     private String accountIfsc;
     private String bankName;
     private String vpa;
+    private String state;
+    private String city;
+    private String pin_code;
+    private String pan_number;
+    private String email;
+    private String DOB;
 }

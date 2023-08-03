@@ -2,6 +2,7 @@ package com.example.Bankregistration.Controller;
 
 import com.example.Bankregistration.Entity.Admin;
 import com.example.Bankregistration.Entity.ApiPartner;
+import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.AdminRequest;
 import com.example.Bankregistration.Model.Response.AdminResponse;
 import com.example.Bankregistration.Pojo.CustomClaims;
@@ -26,6 +27,9 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
+
+    @Autowired
+    private JwtGenerator jwtGenerator;
 
 
     @GetMapping("/welcome")
@@ -114,10 +118,10 @@ public class AdminController {
     public ResponseEntity<?> getTokenData(HttpServletRequest httpServletRequest){
         CustomClaims claims = new CustomClaims();
         try{
-            String token = adminService.getTokenFromAuthorization(httpServletRequest);
-            boolean isExpired = adminService.isTokenExpired(token);
+            String token = jwtGenerator.getTokenFromAuthorization(httpServletRequest);
+            boolean isExpired = jwtGenerator.isTokenExpired(token);
             if(isExpired!=true){
-                Claims data = adminService.getDataFromToken(token);
+                Claims data = jwtGenerator.getDataFromToken(token);
                 claims.setUserId(data.get("id", String.class));
                 claims.setName(data.get("user_name", String.class));
                 return new ResponseEntity<>(claims,HttpStatus.ACCEPTED);
@@ -131,7 +135,7 @@ public class AdminController {
 
     @PostMapping("/admin/validateToken")
     public boolean validateToken(@RequestBody String token){
-       return adminService.validateToken(token);
+       return jwtGenerator.validateToken(token);
     }
 
     @PostMapping("/admin/remove-onboarded-user")

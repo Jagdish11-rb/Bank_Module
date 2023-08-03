@@ -2,24 +2,27 @@ package com.example.Bankregistration.Service.Impl;
 
 
 import com.example.Bankregistration.Entity.ApiPartner;
-import com.example.Bankregistration.Entity.UserBankDetails;
+import com.example.Bankregistration.Entity.ForgotPasswordOtpProperties;
+import com.example.Bankregistration.Entity.UserBankProperties;
+import com.example.Bankregistration.Entity.UserProperties;
+import com.example.Bankregistration.Exception.BankDetailsValidationException;
 import com.example.Bankregistration.Exception.InvalidCredentialsException;
 import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.UserLoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
+import com.example.Bankregistration.Repository.OtpRepository;
+import com.example.Bankregistration.Repository.UserBankRepository;
 import com.example.Bankregistration.Repository.UserRepository;
 import com.example.Bankregistration.Service.ApiService;
 import com.example.Bankregistration.Service.BackGroundService;
 import com.example.Bankregistration.Service.UserService;
-import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 @Service
@@ -30,10 +33,16 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
 
     @Autowired
+    private UserBankRepository bankRepository;
+
+    @Autowired
     private ApiService apiService;
 
     @Autowired
     private BackGroundService backGroundService;
+
+    @Autowired
+    private OtpRepository otpRepository;
 
     @Autowired
     private JwtGenerator jwtGenerator;
@@ -56,31 +65,36 @@ public class UserServiceImpl implements UserService {
     @Override
     public HashMap<Integer, String> onboardUser(UserRequest userRequest, ApiPartner apiPartner) {
         log.info("Request received to onbaord user : "+userRequest);
-        UserBankDetails userEntity = userRepository.findByMobileNumber(userRequest.getMobileNumber()).orElse(null);
+        UserProperties userEntity = userRepository.findByMobileNumber(userRequest.getMobileNumber()).orElse(null);
         HashMap<Integer,String> map = new HashMap<>();
         if(userEntity!=null){
             map.put(1,null);
         }else {
             map.clear();
+            UserProperties properties = new UserProperties();
+            properties.setUser_id(backGroundService.generateUserId(userRequest));
+            properties.setApi_user_id(apiPartner.getId());
+            properties.setPassword(userRequest.getPassword());
+            properties.setApi_user_name(apiPartner.getUsername());
+            properties.setAdmin_id(apiPartner.getAdminId());
+            properties.setAdmin_name(apiPartner.getAdminName());
+            properties.setUser_name(userRequest.getName());
+            properties.setMobileNumber(userRequest.getMobileNumber());
+            properties.setCreated_date(LocalDateTime.now().toString());
+            properties.setPanNumber(userRequest.getPan_number());
+            properties.setState(userRequest.getState());
+            properties.setCity(userRequest.getCity());
+            properties.setPin_code(userRequest.getPin_code());
+            properties.setEmail(userRequest.getEmail());
+            properties.setDOB(userRequest.getDOB());
+            properties.setKycDone(false);
 
-            UserBankDetails userBankDetails = new UserBankDetails();
-            userBankDetails.setUser_id(backGroundService.generateId(userRequest));
-            userBankDetails.setApi_user_id(apiPartner.getId());
-            userBankDetails.setPassword(userRequest.getPassword());
-            userBankDetails.setApi_user_name(apiPartner.getUsername());
-            userBankDetails.setAdmin_id(apiPartner.getAdminId());
-            userBankDetails.setAdmin_name(apiPartner.getAdminName());
-            userBankDetails.setUser_name(userRequest.getName());
-            userBankDetails.setMobileNumber(userRequest.getMobileNumber());
-            userBankDetails.setAccountNumber(userRequest.getAccountNumber());
-            userBankDetails.setAccountType(userRequest.getAccountType());
-            userBankDetails.setAccountIfsc(userRequest.getAccountIfsc());
-            userBankDetails.setBankName(userRequest.getBankName());
-            userBankDetails.setVpa(userRequest.getVpa());
-            userBankDetails.setKycDone(false);
+            UserBankProperties bankProperties = prepareBankDetails(userRequest,properties);
 
-            userRepository.save(userBankDetails);
-            map.put(0,userBankDetails.getUser_id());
+            bankRepository.save(bankProperties);
+            userRepository.save(properties);
+
+            map.put(0,properties.getUser_id());
         }
         return map;
     }
@@ -88,6 +102,26 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<String> findAllOnboardedUsers() {
         return userRepository.findAllOnboardedUsers();
+    }
+
+    @Override
+    public UserBankProperties prepareBankDetails(UserRequest userRequest, UserProperties properties) {
+
+        UserBankProperties bankProperties = new UserBankProperties();
+
+        bankProperties.setUser_id(properties.getUser_id());
+        bankProperties.setApi_user_id(properties.getApi_user_id());
+        bankProperties.setApi_user_name(properties.getApi_user_name());
+        bankProperties.setAdmin_id(properties.getAdmin_id());
+        bankProperties.setAdmin_name(properties.getAdmin_name());
+        bankProperties.setAccount_ifsc(userRequest.getAccountIfsc());
+        bankProperties.setAccount_number(userRequest.getAccountNumber());
+        bankProperties.setBank_name(userRequest.getBankName());
+        bankProperties.setMobile_number(userRequest.getMobileNumber());
+        bankProperties.setAccount_type(userRequest.getAccountType());
+        bankProperties.setVpa(userRequest.getVpa());
+
+        return bankProperties;
     }
 
     @Override
@@ -105,8 +139,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserBankDetails authenticateRequest(UserLoginRequest loginRequest) {
-        UserBankDetails user = userRepository.findById(loginRequest.getId()).orElse(null);
+    public UserProperties authenticateRequest(UserLoginRequest loginRequest) {
+        UserProperties user = userRepository.findById(loginRequest.getId()).orElse(null);
         if(user!=null){
             boolean res = user.getPassword().matches(loginRequest.getPassword());
             if(res==true){
@@ -120,40 +154,65 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Map<String, String> generateToken(UserLoginRequest loginRequest) {
-        return jwtGenerator.generateToken(loginRequest);
-    }
-
-    @Override
-    public UserBankDetails getUserDetails(String userId) {
+    public UserProperties getproperties(String userId) {
         return userRepository.findById(userId).orElse(null);
     }
 
     @Override
-    public UserBankDetails findUserByMobNumber(String mobileNumber) {
+    public UserProperties findUserByMobNumber(String mobileNumber) {
         return userRepository.findByMobileNumber(mobileNumber).orElse(null);
     }
 
     @Override
-    public UserBankDetails saveUser(UserBankDetails user) {
+    public UserProperties saveUser(UserProperties user) {
         return userRepository.save(user);
     }
 
     @Override
-    public boolean validateToken(HttpServletRequest httpServletRequest) {
-        String token = jwtGenerator.getTokenFromAuthorization(httpServletRequest);
-        return jwtGenerator.validateToken(token);
-    }
-
-    @Override
-    public Claims getDataFromToken(HttpServletRequest httpServletRequest) {
-        String token = jwtGenerator.getTokenFromAuthorization(httpServletRequest);
-        return jwtGenerator.getDataFromToken(token);
-    }
-
-    @Override
-    public UserBankDetails findUserById(String id) {
+    public UserProperties findUserById(String id) {
         return userRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public UserProperties findUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public void validateBankDetails(UserRequest userRequest) {
+        if(userRequest.getAccountNumber().isEmpty()){
+            throw new BankDetailsValidationException("Please provide account number.Can't be empty.");
+        }
+        if(userRequest.getAccountType().isEmpty()) {
+            throw new BankDetailsValidationException("Please provide account type.Can't be empty.");
+        }
+        if(userRequest.getAccountIfsc().isEmpty()) {
+            throw new BankDetailsValidationException("Please provide account ifsc code.Can't be empty.");
+        }
+
+        if(userRequest.getVpa().isEmpty()) {
+            throw new BankDetailsValidationException("Please provide virtual address.Can't be empty.");
+        }
+        if(userRequest.getBankName().isEmpty()) {
+            throw new BankDetailsValidationException("Please provide bank name.Can't be empty.");
+        }
+
+
+    }
+
+    @Override
+    public String getOtpForForgotPassword(UserProperties properties) {
+        ForgotPasswordOtpProperties forgotPasswordOtpEntity = new ForgotPasswordOtpProperties();
+
+        forgotPasswordOtpEntity.setUser_id(properties.getUser_id());
+        forgotPasswordOtpEntity.setUniqueId(backGroundService.generateUniqueId(properties.getUser_name().substring(0,2)));
+        forgotPasswordOtpEntity.setOtp(backGroundService.generateOtp());
+        forgotPasswordOtpEntity.setGeneratedTime(LocalDateTime.now());
+        forgotPasswordOtpEntity.setExpiry(forgotPasswordOtpEntity.getGeneratedTime().plusMinutes(5));
+        log.info(String.valueOf(forgotPasswordOtpEntity));
+        otpRepository.save(forgotPasswordOtpEntity);
+
+        return forgotPasswordOtpEntity.getOtp();
     }
 
 }

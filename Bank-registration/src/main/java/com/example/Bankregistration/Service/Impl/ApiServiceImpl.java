@@ -91,21 +91,6 @@ public class ApiServiceImpl implements ApiService {
     }
 
     @Override
-    public String getTokenFromAuthorization(HttpServletRequest httpServletRequest) {
-        return jwtGenerator.getTokenFromAuthorization(httpServletRequest);
-    }
-
-    @Override
-    public boolean validateToken(String token) {
-        return jwtGenerator.validateToken(token);
-    }
-
-    @Override
-    public Claims getDataFromToken(String token) {
-        return jwtGenerator.getDataFromToken(token);
-    }
-
-    @Override
     public List<String> getAllApiUsersOfAdmin(String id) {
         List<String> apiList = apiRepository.findApiUsersOfSingleAdmin(id);
         return apiList;

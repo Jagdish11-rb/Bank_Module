@@ -5,5 +5,9 @@ import com.example.Bankregistration.Model.Request.UserRequest;
 
 public interface BackGroundService {
 
-    String generateId(UserRequest userRequest);
+    String generateUserId(UserRequest userRequest);
+
+    String generateOtp();
+
+    String generateUniqueId(String key);
 }

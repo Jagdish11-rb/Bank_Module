@@ -2,13 +2,11 @@ package com.example.Bankregistration.Entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.Data;
 
 @Entity
 @Data
-@Table(schema = "user_bank_details")
-public class UserBankDetails {
+public class UserProperties {
     @Id
     private String user_id;
     private String user_name;
@@ -18,11 +16,14 @@ public class UserBankDetails {
     private String admin_name;
     private String admin_id;
     private String mobileNumber;
-    private String accountNumber;
-    private String accountType;
-    private String accountIfsc;
-    private String bankName;
-    private String vpa;
     private String aadhaarNumber;
+    private String panNumber;
+    private String state;
+    private String city;
+    private String pin_code;
+    private String created_date;
+    private String updated_date;
+    private String email;
+    private String DOB;
     private boolean isKycDone;
 }

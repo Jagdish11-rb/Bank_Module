@@ -2,6 +2,7 @@ package com.example.Bankregistration.Controller;
 
 import com.example.Bankregistration.Entity.Admin;
 import com.example.Bankregistration.Entity.ApiPartner;
+import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.ApiRequest;
 import com.example.Bankregistration.Model.Response.ApiResponse;
 import com.example.Bankregistration.Service.AdminService;
@@ -30,14 +31,17 @@ public class ApiController {
     @Autowired
     private AdminService adminService;
 
+    @Autowired
+    private JwtGenerator jwtGenerator;
+
     @PostMapping("/api/onboard-api-user")
     public ResponseEntity<?> onboardApiUser(@RequestBody ApiRequest apiRequest, HttpServletRequest httpServletRequest){
         ApiResponse apiResponse = new ApiResponse();
         try{
-            String token = apiService.getTokenFromAuthorization(httpServletRequest);
-            boolean isValid = apiService.validateToken(token);
+            String token = jwtGenerator.getTokenFromAuthorization(httpServletRequest);
+            boolean isValid = jwtGenerator.validateToken(token);
             if(isValid==true){
-                Claims tokenData = apiService.getDataFromToken(token);
+                Claims tokenData = jwtGenerator.getDataFromToken(token);
                 Optional<Admin> admin = adminService.findAdminById(tokenData.get("id", String.class));
                 if(!admin.isEmpty()){
                     HashMap<Integer,String> map = apiService.onboardApiPartner(apiRequest,tokenData);
@@ -90,12 +94,12 @@ public class ApiController {
     @DeleteMapping("api/remove-api-user/{id}")
     public ResponseEntity<?> removeApiUser(@PathVariable String id,HttpServletRequest httpServletRequest){
         try{
-            String token = apiService.getTokenFromAuthorization(httpServletRequest);
-            boolean isValid = apiService.validateToken(token);
+            String token = jwtGenerator.getTokenFromAuthorization(httpServletRequest);
+            boolean isValid = jwtGenerator.validateToken(token);
             if(isValid==true){
                 Optional<ApiPartner> apiPartner = apiService.findApiuserById(id);
                 if(!apiPartner.isEmpty()){
-                    Claims tokenData = apiService.getDataFromToken(token);
+                    Claims tokenData = jwtGenerator.getDataFromToken(token);
                     if(!(tokenData.get("id", String.class).matches(apiPartner.get().getAdminId()) )
                             || !(tokenData.get("user_name",String.class).matches(apiPartner.get().getAdminName()))){
                         return new ResponseEntity<>("Invalid token data.",HttpStatus.NOT_ACCEPTABLE);

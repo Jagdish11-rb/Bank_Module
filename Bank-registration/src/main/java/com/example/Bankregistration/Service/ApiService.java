@@ -24,12 +24,6 @@ public interface ApiService {
 
     void saveApiUser(ApiPartner apiPartner);
 
-    String getTokenFromAuthorization(HttpServletRequest httpServletRequest);
-
-    boolean validateToken(String token);
-
-    Claims getDataFromToken(String token);
-
     List<String> getAllApiUsersOfAdmin(String id);
 
     void changeDetailsForDeletedAdmin(ApiPartner apiPartner);
