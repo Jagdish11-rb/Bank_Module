@@ -214,7 +214,7 @@ public class UserServiceImpl implements UserService {
         forgotPasswordOtpEntity.setId(properties.getUser_id());
         forgotPasswordOtpEntity.setOtp(backGroundService.generateOtp());
         forgotPasswordOtpEntity.setGeneratedTime(LocalDateTime.now());
-        forgotPasswordOtpEntity.setExpiry(forgotPasswordOtpEntity.getGeneratedTime().plusMinutes(5));
+        forgotPasswordOtpEntity.setExpiry(forgotPasswordOtpEntity.getGeneratedTime().plusMinutes(60));
         log.info(String.valueOf(forgotPasswordOtpEntity));
         otpRepository.save(forgotPasswordOtpEntity);
 

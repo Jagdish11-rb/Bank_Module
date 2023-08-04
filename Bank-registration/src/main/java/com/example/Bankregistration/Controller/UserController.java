@@ -3,15 +3,20 @@ package com.example.Bankregistration.Controller;
 import com.example.Bankregistration.Entity.ApiPartner;
 import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.JWT.JwtGenerator;
+import com.example.Bankregistration.Model.FetchRequest;
 import com.example.Bankregistration.Model.Request.UserLoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
 import com.example.Bankregistration.Model.Response.UserResponse;
 import com.example.Bankregistration.Service.UserService;
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +34,8 @@ public class UserController {
 
     @Autowired
     private JwtGenerator jwtGenerator;
+
+
 
     @PostMapping("/user/onboard-user")
     public ResponseEntity<?> onboardUser(@Valid @RequestBody UserRequest userRequest){
@@ -73,7 +80,7 @@ public class UserController {
         try{
             UserProperties user = userService.authenticateRequest(loginRequest);
             if(user!=null){
-                Map<String,String> token = jwtGenerator.generateToken(loginRequest);
+                String token = jwtGenerator.generateToken(loginRequest);
                 return new ResponseEntity<>(token,HttpStatus.ACCEPTED);
             }else{
                 return new ResponseEntity<>("User not found.",HttpStatus.NOT_FOUND);
@@ -87,6 +94,34 @@ public class UserController {
     public ResponseEntity<?> fetchDetails(@RequestBody String user_id){
         try{
             UserProperties user = userService.getproperties(user_id);
+            if(user!=null){
+                return new ResponseEntity<>(user,HttpStatus.FOUND);
+            }else{
+                return new ResponseEntity<>("User not found.",HttpStatus.NOT_FOUND);
+            }
+        }catch(Exception e){
+            return new ResponseEntity<>("Exception occured while fetching details of user.  Reason >>>>>>"+e.getMessage(),HttpStatus.CONFLICT);
+        }
+    }
+
+    @PostMapping("/user/fetch-details-by-request")
+    public ResponseEntity<?> fetchDetails(@RequestBody FetchRequest request){
+        try{
+            UserProperties user = userService.getproperties(request.getUser_id());
+            if(user!=null){
+                return new ResponseEntity<>(user,HttpStatus.FOUND);
+            }else{
+                return new ResponseEntity<>("User not found.",HttpStatus.NOT_FOUND);
+            }
+        }catch(Exception e){
+            return new ResponseEntity<>("Exception occured while fetching details of user.  Reason >>>>>>"+e.getMessage(),HttpStatus.CONFLICT);
+        }
+    }
+
+    @PostMapping("/user/fetch-details-by-request/{id}")
+    public ResponseEntity<?> fetchDetailsById(@RequestBody @PathVariable String id){
+        try{
+            UserProperties user = userService.getproperties(id);
             if(user!=null){
                 return new ResponseEntity<>(user,HttpStatus.FOUND);
             }else{

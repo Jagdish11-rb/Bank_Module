@@ -8,6 +8,7 @@ import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.UserRequest;
 import com.example.Bankregistration.Pojo.CustomClaims;
 import com.example.Bankregistration.Pojo.PasswordChangeRequest;
+import com.example.Bankregistration.Pojo.RenewPassword;
 import com.example.Bankregistration.Service.BackGroundService;
 import com.example.Bankregistration.Service.EmailService;
 import com.example.Bankregistration.Service.UserService;
@@ -73,7 +74,7 @@ public class UserUpdateController {
     }
 
     @PostMapping("/user/send-forgot-password-otp")
-    public ResponseEntity<?> sendForgotPasswordOtp(@RequestBody String user_id) {
+    public ResponseEntity<?> sendForgotPasswordOtp(@RequestHeader("user_id") String user_id) {
         try {
                 UserProperties properties = userService.findUserById(user_id);
                 if(properties!=null){
@@ -89,9 +90,10 @@ public class UserUpdateController {
     }
 
     @PostMapping("/user/verify-forgot-password-otp")
-    public ResponseEntity<?> changePasswordUsingOtp(@RequestBody String otp,@RequestHeader("user_id") String user_id){
+    public ResponseEntity<?> verifyForgotPasswordOtp(@RequestBody String otp,@RequestHeader("user_id") String user_id){
         try{
-            HashMap<Integer,String> map= userService.validateOtp(otp,user_id);
+            String trimmedOtp = otp.trim();
+            HashMap<Integer,String> map= userService.validateOtp(trimmedOtp,user_id);
             if(map.containsKey(0)){
                 return new ResponseEntity<>(map.get(0),HttpStatus.ACCEPTED);
             } else if(map.containsKey(1)){
@@ -101,6 +103,26 @@ public class UserUpdateController {
             }
         }catch(Exception e){
             return new ResponseEntity<>("Exception occured.  Reason :"+e.getMessage(),HttpStatus.CONFLICT);
+        }
+    }
+
+    @PostMapping("/user/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody RenewPassword renewPassword,@RequestHeader("user_id") String user_id){
+        try{
+            UserProperties userProperties = userService.findUserById(user_id);
+            if(userProperties!=null){
+                if(renewPassword.getPassword().matches(renewPassword.getConfirmPassword())){
+                    userProperties.setPassword(renewPassword.getPassword());
+                    userService.saveUser(userProperties);
+                    return new ResponseEntity<>("Password changed successfully",HttpStatus.ACCEPTED);
+                }else{
+                    return new ResponseEntity<>("Password mismatch.",HttpStatus.NOT_ACCEPTABLE);
+                }
+            }else{
+                return new ResponseEntity<>("user not found",HttpStatus.NOT_FOUND);
+            }
+        }catch(Exception e){
+            return new ResponseEntity<>("Exception occured.  Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
     }
 }

@@ -6,6 +6,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.Map;
 
 @Service
 @Slf4j
+@Data
 public class JwtGenerator implements JwtGeneratorInterface{
 
     @Value("${jwt.secret}")
@@ -27,6 +29,9 @@ public class JwtGenerator implements JwtGeneratorInterface{
     @Value("${app.jwtScope.message}")
     private String scope;
 
+    @Value("${jwt.expiration}")
+    private Long expiration;
+
     @Override
     public HashMap<String, String> generateToken(AdminRequest adminRequest) {
 
@@ -37,7 +42,7 @@ public class JwtGenerator implements JwtGeneratorInterface{
         String jwtToken="";
         jwtToken= Jwts.builder()
                 .setClaims(map)
-                .setExpiration(new Date(System.currentTimeMillis()+1000*60*60))
+                .setExpiration(new Date(System.currentTimeMillis()+expiration))
                 .signWith(SignatureAlgorithm.HS256,secret)
                 .compact();
         HashMap<String,String> jwtTokenGen = new HashMap<>();
@@ -49,19 +54,16 @@ public class JwtGenerator implements JwtGeneratorInterface{
 
     }
     @Override
-    public Map<String, String> generateToken(UserLoginRequest loginRequest) {
+    public String generateToken(UserLoginRequest loginRequest) {
         String jwtToken = "";
         jwtToken = Jwts.builder()
                 .setSubject(loginRequest.getPassword())
                 .setId(loginRequest.getId())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 10))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(SignatureAlgorithm.HS256, secret)
                 .compact();
-        Map<String, String> jwtTokenGen = new HashMap<>();
-        jwtTokenGen.put("token", jwtToken);
-        jwtTokenGen.put("message", message);
-        jwtTokenGen.put("scope", scope);
+        String jwtTokenGen = jwtToken;
         return jwtTokenGen;
     }
 

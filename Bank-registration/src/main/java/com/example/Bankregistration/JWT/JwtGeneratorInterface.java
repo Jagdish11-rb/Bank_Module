@@ -12,5 +12,5 @@ public interface JwtGeneratorInterface {
 
     HashMap<String,String> generateToken(AdminRequest adminRequest);
 
-    Map<String,String> generateToken(UserLoginRequest loginRequest);
+    String generateToken(UserLoginRequest loginRequest);
 }
