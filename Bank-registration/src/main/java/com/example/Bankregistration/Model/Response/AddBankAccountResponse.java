@@ -6,5 +6,6 @@ import lombok.Data;
 @Data
 public class AddBankAccountResponse {
     private String bankId;
+    private String vpa;
     private String message;
 }

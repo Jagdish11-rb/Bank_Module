@@ -68,4 +68,10 @@ public class BackGroundServiceImpl implements BackGroundService {
        }
        return bankId;
     }
+
+    @Override
+    public String generateVpa(UserProperties user) {
+        String vpa = user.getMobileNumber().concat("@abl");
+        return vpa;
+    }
 }

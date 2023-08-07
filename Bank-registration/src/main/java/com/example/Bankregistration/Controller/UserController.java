@@ -42,9 +42,6 @@ public class UserController {
     @Autowired
     private EmailService emailService;
 
-    @Value("${cookie.name}")
-    private  String cookieName;
-
     @PostMapping("/user/onboard-user")
     public ResponseEntity<?> onboardUser(@Valid @RequestBody UserRequest userRequest){
         UserResponse response = new UserResponse();
@@ -82,6 +79,7 @@ public class UserController {
                     UserBankProperties userBankProperties = userService.prepareBankDetails(user,bankRequest);
                     AddBankAccountResponse response=new AddBankAccountResponse();
                     response.setBankId(userBankProperties.getBank_id());
+                    response.setVpa(userBankProperties.getVpa());
                     response.setMessage("Bank account added successfully.");
                     return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
                 }else{
@@ -111,7 +109,7 @@ public class UserController {
             UserProperties user = userService.authenticateRequest(loginRequest);
             if(user!=null){
                 String token = jwtGenerator.generateToken(loginRequest);
-                Cookie cookie = new Cookie(cookieName,token);
+                Cookie cookie = new Cookie("myBank_cookie",token);
                 cookie.setMaxAge((int) (jwtGenerator.getExpiration()/100));
                 cookie.setHttpOnly(true);
                 response.addCookie(cookie);
@@ -124,7 +122,23 @@ public class UserController {
         }
     }
 
-    @PostMapping("/user/get-user-details-after-login")
+    @PostMapping("user/user-logout")
+    public ResponseEntity<?> logoutUser(@CookieValue(value="myBank_cookie",required = false) String cookie,HttpServletResponse response){
+        try{
+            if(cookie!=null) {
+                Cookie newCookie = new Cookie("myBank_cookie", null);
+                newCookie.setMaxAge(0);
+                newCookie.setHttpOnly(true);
+                response.addCookie(newCookie);
+            }
+            return new ResponseEntity<>("Logged out successfully.",HttpStatus.ACCEPTED);
+        }catch(Exception e){
+            return new ResponseEntity<>("Exception occured while logging out."+e.getMessage(),HttpStatus.CONFLICT);
+        }
+    }
+
+
+    @PostMapping("/user/get-logged-in-user-details")
     public ResponseEntity<?> getUserDetails(HttpServletRequest request) {
         try{
             String userId = userService.getUserInfoFromCookies(request);

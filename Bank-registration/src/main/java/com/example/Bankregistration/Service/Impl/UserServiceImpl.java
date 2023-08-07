@@ -179,9 +179,6 @@ public class UserServiceImpl implements UserService {
             throw new BankDetailsValidationException("Please provide account ifsc code.Can't be empty.");
         }
 
-        if(bankRequest.getVpa().isEmpty()) {
-            throw new BankDetailsValidationException("Please provide virtual address.Can't be empty.");
-        }
         if(bankRequest.getBankName().isEmpty()) {
             throw new BankDetailsValidationException("Please provide bank name.Can't be empty.");
         }
@@ -233,6 +230,9 @@ public class UserServiceImpl implements UserService {
     @Override
     public String getUserInfoFromCookies(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
+        if(cookies==null){
+            return null;
+        }
         for (Cookie cookie : cookies) {
             String token = cookie.getValue();
             boolean isValid = jwtGenerator.validateToken(token);
@@ -251,7 +251,7 @@ public class UserServiceImpl implements UserService {
         bankProperties.setUser_id(user.getUser_id());
         bankProperties.setBank_id(backGroundService.generateBankId());
         bankProperties.setBank_name(bankRequest.getBankName());
-        bankProperties.setVpa(bankRequest.getVpa());
+        bankProperties.setVpa(backGroundService.generateVpa(user));
         bankProperties.setMobile_number(user.getMobileNumber());
         bankProperties.setAccount_type(bankRequest.getAccountType());
         bankProperties.setAccount_ifsc(bankRequest.getAccountIfsc());

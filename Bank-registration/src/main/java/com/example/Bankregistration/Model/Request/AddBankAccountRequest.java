@@ -11,5 +11,4 @@ public class AddBankAccountRequest {
     private String accountType;
     private String accountIfsc;
     private String bankName;
-    private String vpa;
 }
