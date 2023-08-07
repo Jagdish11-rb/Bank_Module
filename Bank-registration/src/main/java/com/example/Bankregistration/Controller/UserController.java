@@ -35,7 +35,8 @@ public class UserController {
     @Autowired
     private JwtGenerator jwtGenerator;
 
-
+    @Value("${cookie.name}")
+    private  String cookieName;
 
     @PostMapping("/user/onboard-user")
     public ResponseEntity<?> onboardUser(@Valid @RequestBody UserRequest userRequest){
@@ -76,12 +77,16 @@ public class UserController {
     }
 
     @PostMapping("/user/user-login")
-    public ResponseEntity<?> loginUser(@RequestBody UserLoginRequest loginRequest){
+    public ResponseEntity<?> loginUser(@RequestBody UserLoginRequest loginRequest,HttpServletResponse response){
         try{
             UserProperties user = userService.authenticateRequest(loginRequest);
             if(user!=null){
                 String token = jwtGenerator.generateToken(loginRequest);
-                return new ResponseEntity<>(token,HttpStatus.ACCEPTED);
+                Cookie cookie = new Cookie(cookieName,token);
+                cookie.setMaxAge((int) (jwtGenerator.getExpiration()/100));
+                cookie.setHttpOnly(true);
+                response.addCookie(cookie);
+                return new ResponseEntity<>("Logged in successfully.",HttpStatus.ACCEPTED);
             }else{
                 return new ResponseEntity<>("User not found.",HttpStatus.NOT_FOUND);
             }
@@ -90,6 +95,23 @@ public class UserController {
         }
     }
 
+    @PostMapping("/user/get-user-details-after-login")
+    public ResponseEntity<?> getUserDetails(HttpServletRequest request) {
+        try{
+            Cookie[] cookies = request.getCookies();
+            if(cookies!=null){
+                for(Cookie cookie : cookies){
+                    String userId = userService.getUserDetailsFromHttpRequest(cookie);
+                    return new ResponseEntity<>(userId,HttpStatus.ACCEPTED);
+                }
+            }else{
+                return new ResponseEntity<>("No cookies found.",HttpStatus.NOT_FOUND);
+            }
+        }catch(Exception e){
+            return new ResponseEntity<>("Exception occured. Reason : "+e.getMessage(),HttpStatus.CONFLICT);
+        }
+        return new ResponseEntity<>("Unauthorized",HttpStatus.FORBIDDEN);
+    }
     @PostMapping("/user/fetch-details")
     public ResponseEntity<?> fetchDetails(@RequestBody String user_id){
         try{
@@ -118,7 +140,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("/user/fetch-details-by-request/{id}")
+    @PostMapping("/user/fetch-details-by-id/{id}")
     public ResponseEntity<?> fetchDetailsById(@RequestBody @PathVariable String id){
         try{
             UserProperties user = userService.getproperties(id);

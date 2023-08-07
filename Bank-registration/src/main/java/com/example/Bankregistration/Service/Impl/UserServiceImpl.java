@@ -16,6 +16,8 @@ import com.example.Bankregistration.Repository.UserRepository;
 import com.example.Bankregistration.Service.ApiService;
 import com.example.Bankregistration.Service.BackGroundService;
 import com.example.Bankregistration.Service.UserService;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cglib.core.Local;
@@ -241,5 +243,12 @@ public class UserServiceImpl implements UserService {
             map.put(-1,"Invalid credentials.");
         }
         return map;
+    }
+
+    @Override
+    public String getUserDetailsFromHttpRequest(Cookie cookie) {
+        String token = cookie.getValue();
+        Claims claims = jwtGenerator.getDataFromToken(token);
+        return claims.getId();
     }
 }
