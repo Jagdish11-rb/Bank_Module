@@ -8,6 +8,7 @@ import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.Exception.BankDetailsValidationException;
 import com.example.Bankregistration.Exception.InvalidCredentialsException;
 import com.example.Bankregistration.JWT.JwtGenerator;
+import com.example.Bankregistration.Model.Request.AddBankAccountRequest;
 import com.example.Bankregistration.Model.Request.UserLoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
 import com.example.Bankregistration.Repository.OtpRepository;
@@ -80,6 +81,7 @@ public class UserServiceImpl implements UserService {
             properties.setUser_id(backGroundService.generateUserId(userRequest));
             properties.setApi_user_id(apiPartner.getId());
             properties.setPassword(userRequest.getPassword());
+            properties.setBankAccounts(0);
             properties.setApi_user_name(apiPartner.getUsername());
             properties.setAdmin_id(apiPartner.getAdminId());
             properties.setAdmin_name(apiPartner.getAdminName());
@@ -94,11 +96,7 @@ public class UserServiceImpl implements UserService {
             properties.setDOB(userRequest.getDOB());
             properties.setKycDone(false);
 
-            UserBankProperties bankProperties = prepareBankDetails(userRequest,properties);
-
-            bankRepository.save(bankProperties);
             userRepository.save(properties);
-
             map.put(0,properties.getUser_id());
         }
         return map;
@@ -107,26 +105,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<String> findAllOnboardedUsers() {
         return userRepository.findAllOnboardedUsers();
-    }
-
-    @Override
-    public UserBankProperties prepareBankDetails(UserRequest userRequest, UserProperties properties) {
-
-        UserBankProperties bankProperties = new UserBankProperties();
-
-        bankProperties.setUser_id(properties.getUser_id());
-        bankProperties.setApi_user_id(properties.getApi_user_id());
-        bankProperties.setApi_user_name(properties.getApi_user_name());
-        bankProperties.setAdmin_id(properties.getAdmin_id());
-        bankProperties.setAdmin_name(properties.getAdmin_name());
-        bankProperties.setAccount_ifsc(userRequest.getAccountIfsc());
-        bankProperties.setAccount_number(userRequest.getAccountNumber());
-        bankProperties.setBank_name(userRequest.getBankName());
-        bankProperties.setMobile_number(userRequest.getMobileNumber());
-        bankProperties.setAccount_type(userRequest.getAccountType());
-        bankProperties.setVpa(userRequest.getVpa());
-
-        return bankProperties;
     }
 
     @Override
@@ -184,21 +162,21 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void validateBankDetails(UserRequest userRequest) {
-        if(userRequest.getAccountNumber().isEmpty()){
+    public void validateBankDetails(AddBankAccountRequest bankRequest) {
+        if(bankRequest.getAccountNumber().isEmpty()){
             throw new BankDetailsValidationException("Please provide account number.Can't be empty.");
         }
-        if(userRequest.getAccountType().isEmpty()) {
+        if(bankRequest.getAccountType().isEmpty()) {
             throw new BankDetailsValidationException("Please provide account type.Can't be empty.");
         }
-        if(userRequest.getAccountIfsc().isEmpty()) {
+        if(bankRequest.getAccountIfsc().isEmpty()) {
             throw new BankDetailsValidationException("Please provide account ifsc code.Can't be empty.");
         }
 
-        if(userRequest.getVpa().isEmpty()) {
+        if(bankRequest.getVpa().isEmpty()) {
             throw new BankDetailsValidationException("Please provide virtual address.Can't be empty.");
         }
-        if(userRequest.getBankName().isEmpty()) {
+        if(bankRequest.getBankName().isEmpty()) {
             throw new BankDetailsValidationException("Please provide bank name.Can't be empty.");
         }
 
@@ -258,5 +236,25 @@ public class UserServiceImpl implements UserService {
             }
         }
         return null;
+    }
+
+    @Override
+    public UserBankProperties prepareBankDetails(UserProperties user, AddBankAccountRequest bankRequest) {
+        UserBankProperties bankProperties = new UserBankProperties();
+
+        bankProperties.setUser_id(user.getUser_id());
+        bankProperties.setBank_id(backGroundService.generateBankId());
+        bankProperties.setBank_name(bankRequest.getBankName());
+        bankProperties.setVpa(bankRequest.getVpa());
+        bankProperties.setMobile_number(user.getMobileNumber());
+        bankProperties.setAccount_type(bankRequest.getAccountType());
+        bankProperties.setAccount_ifsc(bankRequest.getAccountIfsc());
+        bankProperties.setAccount_number(bankRequest.getAccountNumber());
+        user.setBankAccounts(user.getBankAccounts()+1);
+
+        userRepository.save(user);
+        bankRepository.save(bankProperties);
+
+        return bankProperties;
     }
 }

@@ -5,8 +5,6 @@ import com.example.Bankregistration.Entity.UserBankProperties;
 import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.Exception.UserNotFoundException;
 import com.example.Bankregistration.JWT.JwtGenerator;
-import com.example.Bankregistration.Model.Request.UserRequest;
-import com.example.Bankregistration.Pojo.CustomClaims;
 import com.example.Bankregistration.Pojo.PasswordChangeRequest;
 import com.example.Bankregistration.Pojo.RenewPassword;
 import com.example.Bankregistration.Service.BackGroundService;
@@ -18,6 +16,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.User;
+import org.apache.tomcat.util.http.parser.HttpParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -123,4 +122,6 @@ public class UserUpdateController {
             return new ResponseEntity<>("Exception occured.  Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
     }
+
+
 }

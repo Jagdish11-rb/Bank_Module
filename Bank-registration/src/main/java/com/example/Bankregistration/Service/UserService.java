@@ -3,6 +3,7 @@ package com.example.Bankregistration.Service;
 import com.example.Bankregistration.Entity.ApiPartner;
 import com.example.Bankregistration.Entity.UserBankProperties;
 import com.example.Bankregistration.Entity.UserProperties;
+import com.example.Bankregistration.Model.Request.AddBankAccountRequest;
 import com.example.Bankregistration.Model.Request.UserLoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
 import io.jsonwebtoken.Claims;
@@ -23,8 +24,6 @@ public interface UserService {
 
     List<String> findAllOnboardedUsers();
 
-    UserBankProperties prepareBankDetails(UserRequest userRequest, UserProperties properties);
-
     String getApiUser();
 
     UserProperties authenticateRequest(UserLoginRequest loginRequest);
@@ -41,11 +40,13 @@ public interface UserService {
 
     UserProperties findUserByEmail(String email);
 
-    void validateBankDetails(UserRequest userRequest);
+    void validateBankDetails(AddBankAccountRequest request);
 
     String getOtpForForgotPassword(UserProperties properties);
 
     HashMap<Integer,String> validateOtp(String otp,String user_id);
 
     String getUserInfoFromCookies(HttpServletRequest request);
+
+    UserBankProperties prepareBankDetails(UserProperties user, AddBankAccountRequest bankRequest);
 }

@@ -9,5 +9,5 @@ public interface BackGroundService {
 
     String generateOtp();
 
-    String generateUniqueId(String key);
+    String generateBankId();
 }

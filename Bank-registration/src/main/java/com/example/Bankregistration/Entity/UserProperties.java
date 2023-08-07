@@ -16,6 +16,7 @@ public class UserProperties {
     private String admin_name;
     private String admin_id;
     private String mobileNumber;
+    private int bankAccounts;
     private String aadhaarNumber;
     private String panNumber;
     private String state;

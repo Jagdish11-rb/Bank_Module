@@ -1,11 +1,14 @@
 package com.example.Bankregistration.Controller;
 
 import com.example.Bankregistration.Entity.ApiPartner;
+import com.example.Bankregistration.Entity.UserBankProperties;
 import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.FetchRequest;
+import com.example.Bankregistration.Model.Request.AddBankAccountRequest;
 import com.example.Bankregistration.Model.Request.UserLoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
+import com.example.Bankregistration.Model.Response.AddBankAccountResponse;
 import com.example.Bankregistration.Model.Response.UserResponse;
 import com.example.Bankregistration.Service.UserService;
 import io.jsonwebtoken.Claims;
@@ -44,7 +47,6 @@ public class UserController {
         String api_user_name = userService.getApiUser();
         try{
             ApiPartner apiPartner = userService.getApiUserInfo(api_user_name);
-            userService.validateBankDetails(userRequest);
             HashMap<Integer,String> map = userService.onboardUser(userRequest,apiPartner);
             if(map.containsKey(0)){
                 response.setId(map.get(0));
@@ -63,6 +65,29 @@ public class UserController {
             response.setName(userRequest.getName());
             response.setResponse("Exception occured while onboarding user.  Reason >>>>>>>>>"+e.getMessage());
             return new ResponseEntity<>(response,HttpStatus.CONFLICT);
+        }
+    }
+
+    @PostMapping("user/add-bank-account")
+    public ResponseEntity<?> addBankAccount(@RequestBody AddBankAccountRequest bankRequest , HttpServletRequest request){
+        try{
+            UserProperties user = userService.findUserById(userService.getUserInfoFromCookies(request));
+            if(user!=null){
+                if(user.getUser_id().matches(bankRequest.getUser_id())){
+                    userService.validateBankDetails(bankRequest);
+                    UserBankProperties userBankProperties = userService.prepareBankDetails(user,bankRequest);
+                    AddBankAccountResponse response=new AddBankAccountResponse();
+                    response.setBankId(userBankProperties.getBank_id());
+                    response.setMessage("Bank account added successfully.");
+                    return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+                }else{
+                    return new ResponseEntity<>("Something went wrong.",HttpStatus.NOT_ACCEPTABLE);
+                }
+            }else{
+                return new ResponseEntity<>("User not found.",HttpStatus.NOT_FOUND);
+            }
+        }catch(Exception e){
+            return new ResponseEntity<>("Exception occured while adding bank account . Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
     }
 
@@ -113,34 +138,6 @@ public class UserController {
     public ResponseEntity<?> fetchDetails(@RequestBody String user_id){
         try{
             UserProperties user = userService.getproperties(user_id);
-            if(user!=null){
-                return new ResponseEntity<>(user,HttpStatus.FOUND);
-            }else{
-                return new ResponseEntity<>("User not found.",HttpStatus.NOT_FOUND);
-            }
-        }catch(Exception e){
-            return new ResponseEntity<>("Exception occured while fetching details of user.  Reason >>>>>>"+e.getMessage(),HttpStatus.CONFLICT);
-        }
-    }
-
-    @PostMapping("/user/fetch-details-by-request")
-    public ResponseEntity<?> fetchDetails(@RequestBody FetchRequest request){
-        try{
-            UserProperties user = userService.getproperties(request.getUser_id());
-            if(user!=null){
-                return new ResponseEntity<>(user,HttpStatus.FOUND);
-            }else{
-                return new ResponseEntity<>("User not found.",HttpStatus.NOT_FOUND);
-            }
-        }catch(Exception e){
-            return new ResponseEntity<>("Exception occured while fetching details of user.  Reason >>>>>>"+e.getMessage(),HttpStatus.CONFLICT);
-        }
-    }
-
-    @PostMapping("/user/fetch-details-by-id/{id}")
-    public ResponseEntity<?> fetchDetailsById(@RequestBody @PathVariable String id){
-        try{
-            UserProperties user = userService.getproperties(id);
             if(user!=null){
                 return new ResponseEntity<>(user,HttpStatus.FOUND);
             }else{
