@@ -18,6 +18,7 @@ import com.example.Bankregistration.Service.BackGroundService;
 import com.example.Bankregistration.Service.UserService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cglib.core.Local;
@@ -246,9 +247,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String getUserDetailsFromHttpRequest(Cookie cookie) {
-        String token = cookie.getValue();
-        Claims claims = jwtGenerator.getDataFromToken(token);
-        return claims.getId();
+    public String getUserInfoFromCookies(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        for (Cookie cookie : cookies) {
+            String token = cookie.getValue();
+            boolean isValid = jwtGenerator.validateToken(token);
+            if (isValid == true) {
+                Claims claims = jwtGenerator.getDataFromToken(token);
+                return claims.getId();
+            }
+        }
+        return null;
     }
 }

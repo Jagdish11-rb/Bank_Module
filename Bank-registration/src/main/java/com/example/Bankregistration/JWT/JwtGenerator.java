@@ -54,6 +54,7 @@ public class JwtGenerator implements JwtGeneratorInterface{
     }
     @Override
     public String generateToken(UserLoginRequest loginRequest) {
+
         String jwtToken = "";
         jwtToken = Jwts.builder()
                 .setSubject(loginRequest.getPassword())

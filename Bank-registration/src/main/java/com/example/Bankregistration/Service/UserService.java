@@ -47,5 +47,5 @@ public interface UserService {
 
     HashMap<Integer,String> validateOtp(String otp,String user_id);
 
-    String getUserDetailsFromHttpRequest(Cookie cookie);
+    String getUserInfoFromCookies(HttpServletRequest request);
 }
