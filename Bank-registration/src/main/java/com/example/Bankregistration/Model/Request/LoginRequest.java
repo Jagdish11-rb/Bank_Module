@@ -3,7 +3,7 @@ package com.example.Bankregistration.Model.Request;
 import lombok.Data;
 
 @Data
-public class UserLoginRequest {
+public class LoginRequest {
     private String id;
     private String password;
 }

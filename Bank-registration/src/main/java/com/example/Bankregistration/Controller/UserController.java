@@ -4,13 +4,11 @@ import com.example.Bankregistration.Entity.ApiPartner;
 import com.example.Bankregistration.Entity.UserBankProperties;
 import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.JWT.JwtGenerator;
-import com.example.Bankregistration.Model.FetchRequest;
 import com.example.Bankregistration.Model.Request.AddBankAccountRequest;
-import com.example.Bankregistration.Model.Request.UserLoginRequest;
+import com.example.Bankregistration.Model.Request.LoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
 import com.example.Bankregistration.Model.Response.AddBankAccountResponse;
 import com.example.Bankregistration.Model.Response.UserResponse;
-import com.example.Bankregistration.Service.EmailService;
 import com.example.Bankregistration.Service.UserService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
@@ -19,15 +17,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @Slf4j
@@ -102,9 +97,9 @@ public class UserController {
     }
 
     @PostMapping("/user/user-login")
-    public ResponseEntity<?> loginUser(@RequestBody UserLoginRequest loginRequest,HttpServletResponse response){
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest, HttpServletResponse response){
         try{
-            UserProperties user = userService.authenticateRequest(loginRequest);
+            UserProperties user = userService.authenticateUser(loginRequest);
             if(user!=null){
                 String token = jwtGenerator.generateToken(loginRequest);
                 Cookie cookie = new Cookie("user_cookie",token);

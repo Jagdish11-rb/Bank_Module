@@ -2,10 +2,12 @@ package com.example.Bankregistration.Service.Impl;
 
 import com.example.Bankregistration.Entity.Admin;
 import com.example.Bankregistration.Entity.ApiPartner;
+import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.Exception.InvalidCredentialsException;
 import com.example.Bankregistration.Exception.UserNotFoundException;
 import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.AdminRequest;
+import com.example.Bankregistration.Model.Request.LoginRequest;
 import com.example.Bankregistration.RegUtils.Utils;
 import com.example.Bankregistration.Repository.AdminRepository;
 import com.example.Bankregistration.Service.AdminService;
@@ -75,21 +77,6 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
-    @Override
-    public boolean validateRequest(AdminRequest adminRequest) {
-        Admin admin = adminRepository.findById(adminRequest.getId()).orElse(null);
-        if(admin==null){
-            throw new UserNotFoundException("Admin doesn't exist.");
-        }else{
-            if(!(admin.getUserId().matches(adminRequest.getId()))
-                    || !(admin.getPassword().matches(adminRequest.getPassword()))
-                        || !(admin.getName().matches(adminRequest.getUser_name()))){
-                throw new InvalidCredentialsException("Invalid credentials");
-            }else{
-                return true;
-            }
-        }
-    }
 
     @Override
     public Optional<Admin> findAdminById(String id) {
@@ -101,10 +88,6 @@ public class AdminServiceImpl implements AdminService {
         return adminRepository.getAllAdmins();
     }
 
-    @Override
-    public Object generateToken(AdminRequest adminRequest) {
-        return jwtGenerator.generateToken(adminRequest);
-    }
 
     @Override
     public List<String> getAllApiUsersOfAnAdmin(String id) {
@@ -126,5 +109,20 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public void changeDetailsOfApiUser(ApiPartner apiPartner) {
         apiService.changeDetailsForDeletedAdmin(apiPartner);
+    }
+
+    @Override
+    public Admin authenticateAdmin(LoginRequest loginRequest) {
+        Admin admin  = adminRepository.findById(loginRequest.getId()).orElse(null);
+        if(admin!=null){
+            boolean res = admin.getPassword().matches(loginRequest.getPassword());
+            if(res==true){
+                return admin;
+            }else{
+                throw new InvalidCredentialsException("Incorrect password.");
+            }
+        }else{
+            return admin;
+        }
     }
 }

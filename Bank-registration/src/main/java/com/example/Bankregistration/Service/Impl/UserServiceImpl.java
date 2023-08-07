@@ -9,7 +9,7 @@ import com.example.Bankregistration.Exception.BankDetailsValidationException;
 import com.example.Bankregistration.Exception.InvalidCredentialsException;
 import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.AddBankAccountRequest;
-import com.example.Bankregistration.Model.Request.UserLoginRequest;
+import com.example.Bankregistration.Model.Request.LoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
 import com.example.Bankregistration.Repository.OtpRepository;
 import com.example.Bankregistration.Repository.UserBankRepository;
@@ -21,10 +21,8 @@ import com.example.Bankregistration.Service.UserService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.constraints.Email;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -128,7 +126,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserProperties authenticateRequest(UserLoginRequest loginRequest) {
+    public UserProperties authenticateUser(LoginRequest loginRequest) {
         UserProperties user = userRepository.findById(loginRequest.getId()).orElse(null);
         if(user!=null){
             boolean res = user.getPassword().matches(loginRequest.getPassword());

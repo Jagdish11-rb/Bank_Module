@@ -3,6 +3,7 @@ package com.example.Bankregistration.Service;
 import com.example.Bankregistration.Entity.Admin;
 import com.example.Bankregistration.Entity.ApiPartner;
 import com.example.Bankregistration.Model.Request.AdminRequest;
+import com.example.Bankregistration.Model.Request.LoginRequest;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -15,20 +16,17 @@ public interface AdminService{
 
     HashMap<Integer,String> onboardAdmin(AdminRequest adminRequest);
 
-    boolean validateRequest(AdminRequest adminRequest);
-
     Optional<Admin> findAdminById(String id);
 
     List<String> getAllAdmins();
-
-    Object generateToken(AdminRequest adminRequest);
 
     List<String> getAllApiUsersOfAnAdmin(String id);
 
     ApiPartner findApiUserByName(String s);
 
-
     void removeAdmin(Admin admin);
 
     void changeDetailsOfApiUser(ApiPartner apiPartner);
+
+    Admin authenticateAdmin(LoginRequest loginRequest);
 }

@@ -1,7 +1,7 @@
 package com.example.Bankregistration.JWT;
 
 import com.example.Bankregistration.Model.Request.AdminRequest;
-import com.example.Bankregistration.Model.Request.UserLoginRequest;
+import com.example.Bankregistration.Model.Request.LoginRequest;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -32,28 +32,7 @@ public class JwtGenerator implements JwtGeneratorInterface{
     private Long expiration;
 
     @Override
-    public HashMap<String, String> generateToken(AdminRequest adminRequest) {
-
-        HashMap<String,Object> map = new HashMap<>();
-        map.put("id",adminRequest.getId());
-        map.put("user_name",adminRequest.getUser_name());
-
-        String jwtToken="";
-        jwtToken= Jwts.builder()
-                .setClaims(map)
-                .setExpiration(new Date(System.currentTimeMillis()+expiration))
-                .signWith(SignatureAlgorithm.HS256,secret)
-                .compact();
-        HashMap<String,String> jwtTokenGen = new HashMap<>();
-        jwtTokenGen.put("token",jwtToken);
-        jwtTokenGen.put("message",message);
-        jwtTokenGen.put("scope",scope);
-
-        return jwtTokenGen;
-
-    }
-    @Override
-    public String generateToken(UserLoginRequest loginRequest) {
+    public String generateToken(LoginRequest loginRequest) {
 
         String jwtToken = "";
         jwtToken = Jwts.builder()

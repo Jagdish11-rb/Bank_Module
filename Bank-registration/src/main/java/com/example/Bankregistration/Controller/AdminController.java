@@ -4,11 +4,14 @@ import com.example.Bankregistration.Entity.Admin;
 import com.example.Bankregistration.Entity.ApiPartner;
 import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.AdminRequest;
+import com.example.Bankregistration.Model.Request.LoginRequest;
 import com.example.Bankregistration.Model.Response.AdminResponse;
 import com.example.Bankregistration.Pojo.CustomClaims;
 import com.example.Bankregistration.Service.AdminService;
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,74 +96,73 @@ public class AdminController {
         return list;
     }
 
-    @PostMapping("/admin/generate-admin-token")
-    public ResponseEntity<?> generateAdminToken(@Valid @RequestBody AdminRequest adminRequest, @RequestHeader("secret_key") String secret_key){
+    @PostMapping("admin/admin-login")
+    public ResponseEntity<?> adminLogin(@RequestBody LoginRequest loginRequest, HttpServletResponse response){
         try{
-            boolean isValid = adminService.authorizeRequest(secret_key);
-            if(isValid==true){
-                boolean res = adminService.validateRequest(adminRequest);
-                if(res!=true){
-                    return new ResponseEntity<>("Invalid credentials",HttpStatus.NOT_ACCEPTABLE);
-                }else{
-                    log.info("Admin request : "+adminRequest);
-                    return new ResponseEntity<>(adminService.generateToken(adminRequest),HttpStatus.ACCEPTED);
-                }
+            Admin admin = adminService.authenticateAdmin(loginRequest);
+            if(admin!=null){
+                String token = jwtGenerator.generateToken(loginRequest);
+                Cookie cookie = new Cookie("admin_cookie",token);
+                cookie.setHttpOnly(true);
+                cookie.setMaxAge((int) (jwtGenerator.getExpiration()/100));
+                response.addCookie(cookie);
+                return new ResponseEntity<>("Admin logged in successfully.",HttpStatus.ACCEPTED);
             }else{
-                return new ResponseEntity<>("Unauthorized request.",HttpStatus.NON_AUTHORITATIVE_INFORMATION);
+                return new ResponseEntity<>("Invalid credentials",HttpStatus.NOT_ACCEPTABLE);
             }
         }catch(Exception e){
-                log.info("Exception occured while generating token.");
-                return new ResponseEntity<>("Exception occured while generating token.",HttpStatus.CONFLICT);
+            return new ResponseEntity<>("Exception occured while logging in admin.  Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
     }
 
-    @PostMapping("/admin/get-token-data")
-    public ResponseEntity<?> getTokenData(HttpServletRequest httpServletRequest){
-        CustomClaims claims = new CustomClaims();
+    @PostMapping("admin/get-logged-in-admin-details")
+    public ResponseEntity<?> getAdminDetails(@CookieValue(value="admin_cookie",required = false) String cookie){
         try{
-            String token = jwtGenerator.getTokenFromAuthorization(httpServletRequest);
-            boolean isExpired = jwtGenerator.isTokenExpired(token);
-            if(isExpired!=true){
-                Claims data = jwtGenerator.getDataFromToken(token);
-                claims.setUserId(data.get("id", String.class));
-                claims.setName(data.get("user_name", String.class));
-                return new ResponseEntity<>(claims,HttpStatus.ACCEPTED);
+            String adminId = jwtGenerator.getDataFromToken(cookie).getId();
+            Optional<Admin> admin = adminService.findAdminById(adminId);
+            if(admin!=null){
+                return new ResponseEntity<>(admin,HttpStatus.ACCEPTED);
             }else{
-                return new ResponseEntity<>("Token expired",HttpStatus.ACCEPTED);
+                return new ResponseEntity<>("Admin not found.",HttpStatus.NOT_ACCEPTABLE);
             }
         }catch(Exception e){
-                return new ResponseEntity<>(e.getMessage(),HttpStatus.CONFLICT);
+            return new ResponseEntity<>("Exception occured while fetching data. Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
     }
 
-    @PostMapping("/admin/validateToken")
-    public boolean validateToken(@RequestBody String token){
-       return jwtGenerator.validateToken(token);
-    }
-
-    @PostMapping("/admin/remove-onboarded-user")
-    public ResponseEntity<?> removeAdmin(@RequestBody AdminRequest adminRequest,@RequestHeader("secret_key") String secret_key){
+    @PostMapping("/admin/remove-onboarded-admin")
+    public ResponseEntity<?> removeAdmin(@CookieValue(value="admin_cookie",required = false) String cookie){
         try{
-            boolean isValid = adminService.authorizeRequest(secret_key);
-            if(isValid==true){
-                Admin admin = adminService.findAdminById(adminRequest.getId()).orElse(null);
-                if(admin==null){
-                    return new ResponseEntity<>("No admin onboarded with this admin id.",HttpStatus.NOT_FOUND);
-                }else{
-                    List<String> apiUsers = adminService.getAllApiUsersOfAnAdmin(adminRequest.getId());
-                    log.info(apiUsers.toString());
-                    for(int i=0;i<apiUsers.size();i++){
-                        ApiPartner apiPartner = adminService.findApiUserByName(apiUsers.get(i));
-                        adminService.changeDetailsOfApiUser(apiPartner);
-                    }
-                    adminService.removeAdmin(admin);
-                    return new ResponseEntity<>("Admin removed successfully.",HttpStatus.ACCEPTED);
-                }
+            String adminId = jwtGenerator.getDataFromToken(cookie).getId();
+            Admin admin = adminService.findAdminById(adminId).orElse(null);
+            if(admin==null){
+                return new ResponseEntity<>("No admin onboarded with this admin id.",HttpStatus.NOT_FOUND);
             }else{
-                return new ResponseEntity<>("Unauthorized request.",HttpStatus.NON_AUTHORITATIVE_INFORMATION);
+                List<String> apiUsers = adminService.getAllApiUsersOfAnAdmin(adminId);
+                log.info(apiUsers.toString());
+                for(int i=0;i<apiUsers.size();i++){
+                    ApiPartner apiPartner = adminService.findApiUserByName(apiUsers.get(i));
+                    adminService.changeDetailsOfApiUser(apiPartner);
+                }
+                adminService.removeAdmin(admin);
+                return new ResponseEntity<>("Admin removed successfully.",HttpStatus.ACCEPTED);
             }
         }catch(Exception e){
             return new ResponseEntity<>("Exception occured while deleting admin. Reason >>>>"+e.getMessage(),HttpStatus.CONFLICT);
+        }
+    }
+
+    @PostMapping("admin/admin-logout")
+    public ResponseEntity<?> adminLogout(@CookieValue(value="admin_cookie",required = false) String cookie,HttpServletResponse response){
+        try{
+            if(cookie!=null){
+                Cookie newCookie = new Cookie("admin_cookie",null);
+                newCookie.setMaxAge(0);
+                response.addCookie(newCookie);
+            }
+            return new ResponseEntity<>("Logged out successfully.",HttpStatus.ACCEPTED);
+        }catch(Exception e){
+            return new ResponseEntity<>("Exception occured while logging out. Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
     }
 }

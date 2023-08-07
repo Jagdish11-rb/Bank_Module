@@ -4,15 +4,12 @@ import com.example.Bankregistration.Entity.ApiPartner;
 import com.example.Bankregistration.Entity.UserBankProperties;
 import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.Model.Request.AddBankAccountRequest;
-import com.example.Bankregistration.Model.Request.UserLoginRequest;
+import com.example.Bankregistration.Model.Request.LoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
-import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public interface UserService {
 
@@ -26,7 +23,7 @@ public interface UserService {
 
     String getApiUser();
 
-    UserProperties authenticateRequest(UserLoginRequest loginRequest);
+    UserProperties authenticateUser(LoginRequest loginRequest);
 
 
     UserProperties getproperties(String apiUserId);
