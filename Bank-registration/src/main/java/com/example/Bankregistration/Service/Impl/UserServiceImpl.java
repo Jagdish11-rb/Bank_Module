@@ -263,4 +263,5 @@ public class UserServiceImpl implements UserService {
 
         return bankProperties;
     }
+
 }

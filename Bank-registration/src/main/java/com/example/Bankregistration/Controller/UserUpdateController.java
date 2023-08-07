@@ -42,9 +42,9 @@ public class UserUpdateController {
     private EmailService emailService;
 
     @PostMapping("/user/update-user-password-using-oldpassword")
-    public ResponseEntity<?> updateUser(@RequestBody PasswordChangeRequest request, HttpServletRequest httpServletRequest){
+    public ResponseEntity<?> updateUser(@RequestBody PasswordChangeRequest request, @CookieValue(value="user_cookie",required = false) String cookie){
         try{
-            String userId = userService.getUserInfoFromCookies(httpServletRequest);
+            String userId = jwtGenerator.getDataFromToken(cookie).getId();
             UserProperties user = userService.getproperties(userId);
                 if(user!=null){
                     boolean res = user.getPassword().matches(request.getOldPassword());
@@ -68,9 +68,9 @@ public class UserUpdateController {
     }
 
     @PostMapping("/user/send-forgot-password-otp")
-    public ResponseEntity<?> sendForgotPasswordOtp(HttpServletRequest request) {
+    public ResponseEntity<?> sendForgotPasswordOtp(@CookieValue(value="user_cookie",required = false) String cookie) {
         try {
-            String user_id = userService.getUserInfoFromCookies(request);
+            String user_id = jwtGenerator.getDataFromToken(cookie).getId();
             UserProperties properties = userService.findUserById(user_id);
             if(properties!=null){
                 String otp = userService.getOtpForForgotPassword(properties);
@@ -85,10 +85,10 @@ public class UserUpdateController {
     }
 
     @PostMapping("/user/verify-forgot-password-otp")
-    public ResponseEntity<?> verifyForgotPasswordOtp(@RequestBody String otp,HttpServletRequest request){
+    public ResponseEntity<?> verifyForgotPasswordOtp(@RequestBody String otp,@CookieValue(value="user_cookie",required = false) String cookie){
         try{
             String trimmedOtp = otp.trim();
-            String user_id = userService.getUserInfoFromCookies(request);
+            String user_id = jwtGenerator.getDataFromToken(cookie).getId();
             HashMap<Integer,String> map= userService.validateOtp(trimmedOtp,user_id);
             if(map.containsKey(0)){
                 return new ResponseEntity<>(map.get(0),HttpStatus.ACCEPTED);
@@ -103,9 +103,9 @@ public class UserUpdateController {
     }
 
     @PostMapping("/user/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody RenewPassword renewPassword,HttpServletRequest request){
+    public ResponseEntity<?> changePassword(@RequestBody RenewPassword renewPassword,@CookieValue(value="user_cookie",required = false) String cookie){
         try{
-            String user_id = userService.getUserInfoFromCookies(request);
+            String user_id = jwtGenerator.getDataFromToken(cookie).getId();
             UserProperties userProperties = userService.findUserById(user_id);
             if(userProperties!=null){
                 if(renewPassword.getPassword().matches(renewPassword.getConfirmPassword())){
@@ -122,6 +122,5 @@ public class UserUpdateController {
             return new ResponseEntity<>("Exception occured.  Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
     }
-
 
 }

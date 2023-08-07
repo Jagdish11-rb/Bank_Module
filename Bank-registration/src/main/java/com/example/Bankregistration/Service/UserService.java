@@ -49,4 +49,5 @@ public interface UserService {
     String getUserInfoFromCookies(HttpServletRequest request);
 
     UserBankProperties prepareBankDetails(UserProperties user, AddBankAccountRequest bankRequest);
+
 }

@@ -23,7 +23,6 @@ public class UserProperties {
     private String city;
     private String pin_code;
     private String created_date;
-    private String updated_date;
     private String email;
     private String DOB;
     private boolean isKycDone;
