@@ -10,6 +10,7 @@ import com.example.Bankregistration.Model.Request.UserLoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
 import com.example.Bankregistration.Model.Response.AddBankAccountResponse;
 import com.example.Bankregistration.Model.Response.UserResponse;
+import com.example.Bankregistration.Service.EmailService;
 import com.example.Bankregistration.Service.UserService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
@@ -37,6 +38,9 @@ public class UserController {
 
     @Autowired
     private JwtGenerator jwtGenerator;
+
+    @Autowired
+    private EmailService emailService;
 
     @Value("${cookie.name}")
     private  String cookieName;

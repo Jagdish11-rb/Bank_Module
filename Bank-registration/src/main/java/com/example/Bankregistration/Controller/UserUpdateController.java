@@ -74,7 +74,7 @@ public class UserUpdateController {
             UserProperties properties = userService.findUserById(user_id);
             if(properties!=null){
                 String otp = userService.getOtpForForgotPassword(properties);
-                emailService.sendSimpleEmail(properties,otp);
+                emailService.sendForgotPasswordOtpEmail(properties,otp);
                 return new ResponseEntity<>("Forgot password otp sent to your email successfully.",HttpStatus.OK);
             }else{
                 throw new UserNotFoundException("User not found.");

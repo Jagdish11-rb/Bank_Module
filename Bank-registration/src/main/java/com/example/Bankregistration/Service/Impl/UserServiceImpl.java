@@ -16,10 +16,12 @@ import com.example.Bankregistration.Repository.UserBankRepository;
 import com.example.Bankregistration.Repository.UserRepository;
 import com.example.Bankregistration.Service.ApiService;
 import com.example.Bankregistration.Service.BackGroundService;
+import com.example.Bankregistration.Service.EmailService;
 import com.example.Bankregistration.Service.UserService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.Email;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cglib.core.Local;
@@ -52,6 +54,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private JwtGenerator jwtGenerator;
+
+    @Autowired
+    private EmailService emailService;
     @Override
     public boolean validateApiUser(String apiUserName) {
         ApiPartner apiPartner = apiService.findApiUserByName(apiUserName);
@@ -97,6 +102,7 @@ public class UserServiceImpl implements UserService {
             properties.setKycDone(false);
 
             userRepository.save(properties);
+            emailService.sendAfterRegisterEmail(properties);
             map.put(0,properties.getUser_id());
         }
         return map;
@@ -195,7 +201,7 @@ public class UserServiceImpl implements UserService {
         forgotPasswordOtpEntity.setId(properties.getUser_id());
         forgotPasswordOtpEntity.setOtp(backGroundService.generateOtp());
         forgotPasswordOtpEntity.setGeneratedTime(LocalDateTime.now());
-        forgotPasswordOtpEntity.setExpiry(forgotPasswordOtpEntity.getGeneratedTime().plusMinutes(60));
+        forgotPasswordOtpEntity.setExpiry(forgotPasswordOtpEntity.getGeneratedTime().plusMinutes(10));
         log.info(String.valueOf(forgotPasswordOtpEntity));
         otpRepository.save(forgotPasswordOtpEntity);
 

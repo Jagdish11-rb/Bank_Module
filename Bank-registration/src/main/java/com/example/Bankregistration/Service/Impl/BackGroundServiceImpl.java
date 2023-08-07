@@ -24,7 +24,8 @@ public class BackGroundServiceImpl implements BackGroundService {
 
     @Override
     public String generateUserId(UserRequest userRequest) {
-        String userName = ((userRequest.getName()).substring(0,3)).toUpperCase();
+        String user_name=userRequest.getName().trim();
+        String userName = (user_name.substring(0,3)).toUpperCase();
         Random random = new Random();
         int num = random.nextInt(999);
         String id = userName.concat(String.valueOf(num));
