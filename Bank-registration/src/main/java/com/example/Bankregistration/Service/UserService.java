@@ -6,6 +6,7 @@ import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.Model.Request.UserLoginRequest;
 import com.example.Bankregistration.Model.Request.UserRequest;
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
@@ -46,4 +47,5 @@ public interface UserService {
 
     HashMap<Integer,String> validateOtp(String otp,String user_id);
 
+    String getUserInfoFromCookies(HttpServletRequest request);
 }

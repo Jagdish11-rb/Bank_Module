@@ -35,7 +35,8 @@ public class UserController {
     @Autowired
     private JwtGenerator jwtGenerator;
 
-
+    @Value("${cookie.name}")
+    private  String cookieName;
 
     @PostMapping("/user/onboard-user")
     public ResponseEntity<?> onboardUser(@Valid @RequestBody UserRequest userRequest){
@@ -65,7 +66,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/get-all-onboarded-users")
+    @GetMapping("/user/get-all-onboarded-users")
     public ResponseEntity<?> retrieveAllUsers(){
         try{
             List<String> list = userService.findAllOnboardedUsers();
@@ -76,12 +77,16 @@ public class UserController {
     }
 
     @PostMapping("/user/user-login")
-    public ResponseEntity<?> loginUser(@RequestBody UserLoginRequest loginRequest){
+    public ResponseEntity<?> loginUser(@RequestBody UserLoginRequest loginRequest,HttpServletResponse response){
         try{
             UserProperties user = userService.authenticateRequest(loginRequest);
             if(user!=null){
                 String token = jwtGenerator.generateToken(loginRequest);
-                return new ResponseEntity<>(token,HttpStatus.ACCEPTED);
+                Cookie cookie = new Cookie(cookieName,token);
+                cookie.setMaxAge((int) (jwtGenerator.getExpiration()/100));
+                cookie.setHttpOnly(true);
+                response.addCookie(cookie);
+                return new ResponseEntity<>("Logged in successfully.",HttpStatus.ACCEPTED);
             }else{
                 return new ResponseEntity<>("User not found.",HttpStatus.NOT_FOUND);
             }
@@ -90,6 +95,20 @@ public class UserController {
         }
     }
 
+    @PostMapping("/user/get-user-details-after-login")
+    public ResponseEntity<?> getUserDetails(HttpServletRequest request) {
+        try{
+            String userId = userService.getUserInfoFromCookies(request);
+            UserProperties user = userService.findUserById(userId);
+            if(user!=null){
+                return new ResponseEntity<>(user,HttpStatus.ACCEPTED);
+            }else{
+                return new ResponseEntity<>("User not found",HttpStatus.NOT_FOUND);
+            }
+        }catch(Exception e){
+            return new ResponseEntity<>("Exception occured. Reason : "+e.getMessage(),HttpStatus.CONFLICT);
+        }
+    }
     @PostMapping("/user/fetch-details")
     public ResponseEntity<?> fetchDetails(@RequestBody String user_id){
         try{
@@ -118,7 +137,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("/user/fetch-details-by-request/{id}")
+    @PostMapping("/user/fetch-details-by-id/{id}")
     public ResponseEntity<?> fetchDetailsById(@RequestBody @PathVariable String id){
         try{
             UserProperties user = userService.getproperties(id);
@@ -133,35 +152,25 @@ public class UserController {
     }
 
     @PostMapping("/user/do-kyc-verification")
-    public ResponseEntity<?> doKyc(@RequestBody  String aadhaarNumber ,HttpServletRequest httpServletRequest) {
+    public ResponseEntity<?> doKyc(@RequestBody  String aadhaarNumber,HttpServletRequest request) {
         try {
-            String token = jwtGenerator.getTokenFromAuthorization(httpServletRequest);
-            boolean isValid = jwtGenerator.validateToken(token);
-            if (isValid != true) {
-                return new ResponseEntity<>("Invalid token.", HttpStatus.NOT_ACCEPTABLE);
-            } else {
-                Claims claims = jwtGenerator.getDataFromToken(token);
-                UserProperties user = userService.findUserById(claims.getId());
-                if(user.isKycDone()==true){
-                    return new ResponseEntity<>("KYC verification already done.",HttpStatus.ALREADY_REPORTED);
-                }
+            String userId = userService.getUserInfoFromCookies(request);
+                UserProperties user = userService.findUserById(userId);
                 if (user != null) {
-                    if (user.getPassword().matches(claims.getSubject())) {
-                        if (aadhaarNumber.length() == 12) {
-                            user.setAadhaarNumber(aadhaarNumber);
-                            user.setKycDone(true);
-                            userService.saveUser(user);
-                            return new ResponseEntity<>("KYC verification successful.",HttpStatus.OK);
-                        } else {
-                            return new ResponseEntity<>("KYC verification failed.", HttpStatus.NOT_ACCEPTABLE);
-                        }
+                    if(user.isKycDone()==true){
+                        return new ResponseEntity<>("KYC verification already done.",HttpStatus.ALREADY_REPORTED);
+                    }
+                    if (aadhaarNumber.length() == 12) {
+                        user.setAadhaarNumber(aadhaarNumber);
+                        user.setKycDone(true);
+                        userService.saveUser(user);
+                        return new ResponseEntity<>("KYC verification successful.",HttpStatus.OK);
                     } else {
-                        return new ResponseEntity<>("Incorrect token details.", HttpStatus.NO_CONTENT);
+                        return new ResponseEntity<>("KYC verification failed.", HttpStatus.NOT_ACCEPTABLE);
                     }
                 } else {
                     return new ResponseEntity<>("User not found.", HttpStatus.NOT_FOUND);
                 }
-            }
         } catch (Exception e) {
             return new ResponseEntity<>("Exception occured while updating user. Reason >>>>>>>>" + e.getMessage(), HttpStatus.CONFLICT);
         }

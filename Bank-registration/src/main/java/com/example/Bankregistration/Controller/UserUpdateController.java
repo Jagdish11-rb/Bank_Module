@@ -14,6 +14,7 @@ import com.example.Bankregistration.Service.EmailService;
 import com.example.Bankregistration.Service.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwt;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.User;
@@ -44,12 +45,8 @@ public class UserUpdateController {
     @PostMapping("/user/update-user-password-using-oldpassword")
     public ResponseEntity<?> updateUser(@RequestBody PasswordChangeRequest request, HttpServletRequest httpServletRequest){
         try{
-            String token = jwtGenerator.getTokenFromAuthorization(httpServletRequest);
-            boolean isValid = jwtGenerator.validateToken(token);
-            if(isValid!=true){
-                return new ResponseEntity<>("Invalid token.",HttpStatus.NOT_ACCEPTABLE);
-            }else{
-                UserProperties user = userService.getproperties(request.getId());
+            String userId = userService.getUserInfoFromCookies(httpServletRequest);
+            UserProperties user = userService.getproperties(userId);
                 if(user!=null){
                     boolean res = user.getPassword().matches(request.getOldPassword());
                     if(res!=true){
@@ -66,33 +63,33 @@ public class UserUpdateController {
                 }else{
                     return new ResponseEntity<>("User not found.",HttpStatus.NOT_FOUND);
                 }
-            }
-
-        }catch(Exception e){
+        } catch(Exception e){
             return new ResponseEntity<>("Exception occured while updating user. Reason >>>>>>>>"+e.getMessage(),HttpStatus.CONFLICT);
         }
     }
 
     @PostMapping("/user/send-forgot-password-otp")
-    public ResponseEntity<?> sendForgotPasswordOtp(@RequestHeader("user_id") String user_id) {
+    public ResponseEntity<?> sendForgotPasswordOtp(HttpServletRequest request) {
         try {
-                UserProperties properties = userService.findUserById(user_id);
-                if(properties!=null){
-                    String otp = userService.getOtpForForgotPassword(properties);
-                    emailService.sendSimpleEmail(properties,otp);
-                    return new ResponseEntity<>("Forgot password otp sent to your email successfully.",HttpStatus.OK);
-                }else{
-                    throw new UserNotFoundException("User not found.");
-                }
+            String user_id = userService.getUserInfoFromCookies(request);
+            UserProperties properties = userService.findUserById(user_id);
+            if(properties!=null){
+                String otp = userService.getOtpForForgotPassword(properties);
+                emailService.sendSimpleEmail(properties,otp);
+                return new ResponseEntity<>("Forgot password otp sent to your email successfully.",HttpStatus.OK);
+            }else{
+                throw new UserNotFoundException("User not found.");
+            }
         } catch (Exception e) {
             return new ResponseEntity<>("Exception occured while sending forgot password otp. Reason : "+e.getMessage(), HttpStatus.CONFLICT);
         }
     }
 
     @PostMapping("/user/verify-forgot-password-otp")
-    public ResponseEntity<?> verifyForgotPasswordOtp(@RequestBody String otp,@RequestHeader("user_id") String user_id){
+    public ResponseEntity<?> verifyForgotPasswordOtp(@RequestBody String otp,HttpServletRequest request){
         try{
             String trimmedOtp = otp.trim();
+            String user_id = userService.getUserInfoFromCookies(request);
             HashMap<Integer,String> map= userService.validateOtp(trimmedOtp,user_id);
             if(map.containsKey(0)){
                 return new ResponseEntity<>(map.get(0),HttpStatus.ACCEPTED);
@@ -107,8 +104,9 @@ public class UserUpdateController {
     }
 
     @PostMapping("/user/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody RenewPassword renewPassword,@RequestHeader("user_id") String user_id){
+    public ResponseEntity<?> changePassword(@RequestBody RenewPassword renewPassword,HttpServletRequest request){
         try{
+            String user_id = userService.getUserInfoFromCookies(request);
             UserProperties userProperties = userService.findUserById(user_id);
             if(userProperties!=null){
                 if(renewPassword.getPassword().matches(renewPassword.getConfirmPassword())){

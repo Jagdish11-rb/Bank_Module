@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -55,6 +54,7 @@ public class JwtGenerator implements JwtGeneratorInterface{
     }
     @Override
     public String generateToken(UserLoginRequest loginRequest) {
+
         String jwtToken = "";
         jwtToken = Jwts.builder()
                 .setSubject(loginRequest.getPassword())
