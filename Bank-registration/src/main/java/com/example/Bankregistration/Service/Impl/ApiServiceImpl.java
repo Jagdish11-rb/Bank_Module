@@ -47,8 +47,8 @@ public class ApiServiceImpl implements ApiService {
 
                 newApiPartner.setId(apiRequest.getApi_user_id());
                 newApiPartner.setUsername(apiRequest.getApi_user_name());
-                newApiPartner.setAdminName(tokenData.get("user_name", String.class));
-                newApiPartner.setAdminId(tokenData.get("id", String.class));
+                newApiPartner.setAdminName(tokenData.getSubject());
+                newApiPartner.setAdminId(tokenData.getId());
                 newApiPartner.setActive(true);
 
                 apiRepository.save(newApiPartner);
@@ -103,6 +103,4 @@ public class ApiServiceImpl implements ApiService {
         apiPartner.setActive(false);
         apiRepository.save(apiPartner);
     }
-
-
 }

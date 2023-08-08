@@ -6,11 +6,9 @@ import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.AdminRequest;
 import com.example.Bankregistration.Model.Request.LoginRequest;
 import com.example.Bankregistration.Model.Response.AdminResponse;
-import com.example.Bankregistration.Pojo.CustomClaims;
 import com.example.Bankregistration.Service.AdminService;
-import io.jsonwebtoken.Claims;
+import com.example.Bankregistration.Service.ApiService;
 import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @Slf4j
@@ -33,6 +30,10 @@ public class AdminController {
 
     @Autowired
     private JwtGenerator jwtGenerator;
+
+    @Autowired
+    private ApiService apiService;
+
 
 
     @GetMapping("/welcome")
@@ -102,7 +103,8 @@ public class AdminController {
             Admin admin = adminService.authenticateAdmin(loginRequest);
             if(admin!=null){
                 String token = jwtGenerator.generateToken(loginRequest);
-                Cookie cookie = new Cookie("admin_cookie",token);
+                log.info(token);
+                Cookie cookie = new Cookie("my_admin_cookie",token);
                 cookie.setHttpOnly(true);
                 cookie.setMaxAge((int) (jwtGenerator.getExpiration()/100));
                 response.addCookie(cookie);
@@ -116,14 +118,20 @@ public class AdminController {
     }
 
     @PostMapping("admin/get-logged-in-admin-details")
-    public ResponseEntity<?> getAdminDetails(@CookieValue(value="admin_cookie",required = false) String cookie){
+    public ResponseEntity<?> getAdminDetails(@CookieValue(value="my_admin_cookie",required = false) String cookie){
         try{
-            String adminId = jwtGenerator.getDataFromToken(cookie).getId();
-            Optional<Admin> admin = adminService.findAdminById(adminId);
-            if(admin!=null){
-                return new ResponseEntity<>(admin,HttpStatus.ACCEPTED);
+            log.info(cookie);
+            boolean isValid = jwtGenerator.validateToken(cookie);
+            if(isValid==true){
+                String adminId = jwtGenerator.getDataFromToken(cookie).getId();
+                Admin admin = adminService.findAdminById(adminId).orElse(null);
+                if(admin!=null){
+                    return new ResponseEntity<>(admin,HttpStatus.ACCEPTED);
+                }else{
+                    return new ResponseEntity<>("Admin not found.",HttpStatus.NOT_ACCEPTABLE);
+                }
             }else{
-                return new ResponseEntity<>("Admin not found.",HttpStatus.NOT_ACCEPTABLE);
+                return new ResponseEntity<>("Token expired.",HttpStatus.GONE);
             }
         }catch(Exception e){
             return new ResponseEntity<>("Exception occured while fetching data. Reason : "+e.getMessage(),HttpStatus.CONFLICT);
@@ -131,7 +139,7 @@ public class AdminController {
     }
 
     @PostMapping("/admin/remove-onboarded-admin")
-    public ResponseEntity<?> removeAdmin(@CookieValue(value="admin_cookie",required = false) String cookie){
+    public ResponseEntity<?> removeAdmin(@CookieValue(value="my_admin_cookie",required = false) String cookie){
         try{
             String adminId = jwtGenerator.getDataFromToken(cookie).getId();
             Admin admin = adminService.findAdminById(adminId).orElse(null);
@@ -153,16 +161,25 @@ public class AdminController {
     }
 
     @PostMapping("admin/admin-logout")
-    public ResponseEntity<?> adminLogout(@CookieValue(value="admin_cookie",required = false) String cookie,HttpServletResponse response){
+    public ResponseEntity<?> adminLogout(@CookieValue(value="my_admin_cookie",required = false) String cookie,HttpServletResponse httpServletResponse){
         try{
+            log.info(cookie);
             if(cookie!=null){
-                Cookie newCookie = new Cookie("admin_cookie",null);
+                Cookie newCookie = new Cookie("my_admin_cookie",null);
                 newCookie.setMaxAge(0);
-                response.addCookie(newCookie);
+                httpServletResponse.addCookie(newCookie);
+                httpServletResponse.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+                httpServletResponse.setHeader("Pragma", "no-cache");
+                httpServletResponse.setHeader("Expires", "0");
             }
             return new ResponseEntity<>("Logged out successfully.",HttpStatus.ACCEPTED);
         }catch(Exception e){
             return new ResponseEntity<>("Exception occured while logging out. Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
+    }
+
+    @PostMapping("admin/validate-token")
+    public boolean validateToken(@RequestBody String token){
+        return jwtGenerator.validateToken(token);
     }
 }

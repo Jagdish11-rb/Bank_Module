@@ -134,13 +134,18 @@ public class UserController {
     @PostMapping("/user/get-logged-in-user-details")
     public ResponseEntity<?> getUserDetails(@CookieValue(value="user_cookie",required = false) String cookie,HttpServletRequest request) {
         try{
-            Claims claims = jwtGenerator.getDataFromToken(cookie);
-            String userId = claims.getId();
-            UserProperties user = userService.findUserById(userId);
-            if(user!=null){
-                return new ResponseEntity<>(user,HttpStatus.ACCEPTED);
+            boolean isValid = jwtGenerator.validateToken(cookie);
+            if (isValid == true) {
+                Claims claims = jwtGenerator.getDataFromToken(cookie);
+                String userId = claims.getId();
+                UserProperties user = userService.findUserById(userId);
+                if(user!=null){
+                    return new ResponseEntity<>(user,HttpStatus.ACCEPTED);
+                }else{
+                    return new ResponseEntity<>("User not found",HttpStatus.NOT_FOUND);
+                }
             }else{
-                return new ResponseEntity<>("User not found",HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>("Token expired",HttpStatus.GONE);
             }
         }catch(Exception e){
             return new ResponseEntity<>("Exception occured. Reason : "+e.getMessage(),HttpStatus.CONFLICT);
