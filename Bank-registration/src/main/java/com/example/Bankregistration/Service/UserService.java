@@ -47,4 +47,9 @@ public interface UserService {
 
     UserBankProperties prepareBankDetails(UserProperties user, AddBankAccountRequest bankRequest);
 
+    void removeUser(UserProperties user);
+
+    UserBankProperties findBankAccountById(String id);
+
+    void removeBankAccount(String bankId);
 }

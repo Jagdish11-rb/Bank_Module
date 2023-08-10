@@ -246,8 +246,8 @@ public class UserServiceImpl implements UserService {
     public UserBankProperties prepareBankDetails(UserProperties user, AddBankAccountRequest bankRequest) {
         UserBankProperties bankProperties = new UserBankProperties();
 
-        bankProperties.setUser_id(user.getUser_id());
-        bankProperties.setBank_id(backGroundService.generateBankId());
+        bankProperties.setUserId(user.getUser_id());
+        bankProperties.setBankId(backGroundService.generateBankId());
         bankProperties.setBank_name(bankRequest.getBankName());
         bankProperties.setVpa(backGroundService.generateVpa(user));
         bankProperties.setMobile_number(user.getMobileNumber());
@@ -260,6 +260,25 @@ public class UserServiceImpl implements UserService {
         bankRepository.save(bankProperties);
 
         return bankProperties;
+    }
+
+    @Override
+    public void removeUser(UserProperties user) {
+        String id = user.getUser_id();
+        findUserById(id);
+        bankRepository.deleteAllByUserId(id);
+        log.info(String.valueOf(bankRepository.findById(id)));
+        userRepository.deleteById(user.getUser_id());
+    }
+
+    @Override
+    public UserBankProperties findBankAccountById(String id) {
+        return bankRepository.findByBankId(id);
+    }
+
+    @Override
+    public void removeBankAccount(String bankId) {
+        bankRepository.deleteByBankId(bankId);
     }
 
 }

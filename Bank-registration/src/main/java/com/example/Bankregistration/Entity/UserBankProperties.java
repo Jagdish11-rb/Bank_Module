@@ -8,8 +8,8 @@ import lombok.Data;
 @Entity
 public class UserBankProperties {
     @Id
-    private String bank_id;
-    private String user_id;
+    private String bankId;
+    private String userId;
     private String mobile_number;
     private String account_number;
     private String account_type;

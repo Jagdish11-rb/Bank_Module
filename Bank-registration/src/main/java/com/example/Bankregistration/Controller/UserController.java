@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -71,7 +72,7 @@ public class UserController {
                     userService.validateBankDetails(bankRequest);
                     UserBankProperties userBankProperties = userService.prepareBankDetails(user,bankRequest);
                     AddBankAccountResponse response=new AddBankAccountResponse();
-                    response.setBankId(userBankProperties.getBank_id());
+                    response.setBankId(userBankProperties.getBankId());
                     response.setVpa(userBankProperties.getVpa());
                     response.setMessage("Bank account added successfully.");
                     return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
@@ -187,6 +188,45 @@ public class UserController {
             }
         } catch (Exception e) {
             return new ResponseEntity<>("Exception occured while updating user. Reason >>>>>>>>" + e.getMessage(), HttpStatus.CONFLICT);
+        }
+    }
+
+    @PostMapping("/user/delete-account")
+    public ResponseEntity<?> deleteAccount(@CookieValue(value="user_cookie",required = false) String cookie){
+        try{
+            Claims claims = jwtGenerator.getDataFromToken(cookie);
+            String id = claims.getId();
+            UserProperties user = userService.findUserById(id);
+            if(user!=null){
+                userService.removeUser(user);
+                return new ResponseEntity<>("Account deleted.",HttpStatus.ACCEPTED);
+            }
+            return new ResponseEntity<>("Something went wrong.",HttpStatus.NOT_ACCEPTABLE);
+        }catch(Exception e){
+            return new ResponseEntity<>("Exception occured while deleting user.",HttpStatus.CONFLICT);
+        }
+    }
+
+    @PostMapping("user/remove-bank-account")
+    public ResponseEntity<?> removeBankAccount(@CookieValue(value="user_cookie",required = false) String cookie,@RequestHeader("bank_id") String bankId){
+        try{
+            String userId = jwtGenerator.getDataFromToken(cookie).getId();
+            UserBankProperties bankProperties = userService.findBankAccountById(bankId);
+            if(bankProperties!=null){
+                if(bankProperties.getUserId().matches(userId)){
+                    userService.removeBankAccount(bankId);
+                    UserProperties user = userService.findUserById(bankProperties.getUserId());
+                    user.setBankAccounts(user.getBankAccounts()-1);
+                    userService.saveUser(user);
+                    return new ResponseEntity<>("Bank account removed successfully.",HttpStatus.ACCEPTED);
+                }else{
+                    return new ResponseEntity<>("No bank accounts find for this user with this bankId",HttpStatus.NOT_ACCEPTABLE);
+                }
+            }else{
+                return new ResponseEntity<>("Bank account details not found",HttpStatus.NOT_FOUND);
+            }
+        }catch(Exception e){
+            return new ResponseEntity<>("Exception occured while removing bank account.",HttpStatus.CONFLICT);
         }
     }
 }
