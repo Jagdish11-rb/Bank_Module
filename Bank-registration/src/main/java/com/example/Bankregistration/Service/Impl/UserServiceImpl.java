@@ -6,6 +6,7 @@ import com.example.Bankregistration.Entity.ForgotPasswordOtpProperties;
 import com.example.Bankregistration.Entity.UserBankProperties;
 import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.Exception.BankDetailsValidationException;
+import com.example.Bankregistration.Exception.DuplicateBankAccountException;
 import com.example.Bankregistration.Exception.InvalidCredentialsException;
 import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.AddBankAccountRequest;
@@ -248,12 +249,12 @@ public class UserServiceImpl implements UserService {
 
         bankProperties.setUserId(user.getUser_id());
         bankProperties.setBankId(backGroundService.generateBankId());
-        bankProperties.setBank_name(bankRequest.getBankName());
+        bankProperties.setBankName(bankRequest.getBankName());
         bankProperties.setVpa(backGroundService.generateVpa(user));
-        bankProperties.setMobile_number(user.getMobileNumber());
-        bankProperties.setAccount_type(bankRequest.getAccountType());
-        bankProperties.setAccount_ifsc(bankRequest.getAccountIfsc());
-        bankProperties.setAccount_number(bankRequest.getAccountNumber());
+        bankProperties.setMobileNumber(user.getMobileNumber());
+        bankProperties.setAccountType(bankRequest.getAccountType());
+        bankProperties.setAccountIfsc(bankRequest.getAccountIfsc());
+        bankProperties.setAccountNumber(bankRequest.getAccountNumber());
         user.setBankAccounts(user.getBankAccounts()+1);
 
         userRepository.save(user);
@@ -279,6 +280,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public void removeBankAccount(String bankId) {
         bankRepository.deleteByBankId(bankId);
+    }
+
+    @Override
+    public void checkForDuplicateBankAccount(AddBankAccountRequest bankRequest) {
+        UserBankProperties bankProperties = bankRepository.findByAccountNumber(bankRequest.getAccountNumber());
+        if(bankProperties!=null){
+            throw new DuplicateBankAccountException("Bank account already added.");
+        }
     }
 
 }

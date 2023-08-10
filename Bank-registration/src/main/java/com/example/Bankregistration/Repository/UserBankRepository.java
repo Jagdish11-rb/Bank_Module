@@ -25,5 +25,7 @@ public interface UserBankRepository extends JpaRepository<UserBankProperties,Str
 
     @Transactional
     void deleteByBankId(String bankId);
+
+    UserBankProperties findByAccountNumber(String accountNumber);
 }
 

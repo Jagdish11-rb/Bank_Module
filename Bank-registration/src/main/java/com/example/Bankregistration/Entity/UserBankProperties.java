@@ -10,10 +10,10 @@ public class UserBankProperties {
     @Id
     private String bankId;
     private String userId;
-    private String mobile_number;
-    private String account_number;
-    private String account_type;
-    private String account_ifsc;
-    private String bank_name;
+    private String mobileNumber;
+    private String accountNumber;
+    private String accountType;
+    private String accountIfsc;
+    private String bankName;
     private String vpa;
 }

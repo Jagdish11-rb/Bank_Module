@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 public class AddBankAccountRequest {
 
-    private String user_id;
+    private String userId;
     private String accountNumber;
     private String accountType;
     private String accountIfsc;

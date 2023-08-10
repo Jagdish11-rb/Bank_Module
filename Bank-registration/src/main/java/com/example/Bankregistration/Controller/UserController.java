@@ -68,7 +68,8 @@ public class UserController {
             String userId = jwtGenerator.getDataFromToken(cookie).getId();
             UserProperties user = userService.findUserById(userId);
             if(user!=null){
-                if(user.getUser_id().matches(bankRequest.getUser_id())){
+                if(user.getUser_id().matches(bankRequest.getUserId())){
+                    userService.checkForDuplicateBankAccount(bankRequest);
                     userService.validateBankDetails(bankRequest);
                     UserBankProperties userBankProperties = userService.prepareBankDetails(user,bankRequest);
                     AddBankAccountResponse response=new AddBankAccountResponse();

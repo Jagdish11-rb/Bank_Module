@@ -52,4 +52,6 @@ public interface UserService {
     UserBankProperties findBankAccountById(String id);
 
     void removeBankAccount(String bankId);
+
+    void checkForDuplicateBankAccount(AddBankAccountRequest bankRequest);
 }
