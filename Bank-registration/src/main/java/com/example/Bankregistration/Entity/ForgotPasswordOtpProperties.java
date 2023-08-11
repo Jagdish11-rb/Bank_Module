@@ -13,6 +13,8 @@ public class ForgotPasswordOtpProperties {
     @Id
     private String Id;
     private String otp;
+    private boolean isOtpVerified;
+    private boolean isPasswordChanged;
     private LocalDateTime generatedTime;
     private LocalDateTime expiry;
 }

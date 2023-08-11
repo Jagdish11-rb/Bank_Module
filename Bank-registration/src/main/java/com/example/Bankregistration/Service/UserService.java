@@ -1,6 +1,7 @@
 package com.example.Bankregistration.Service;
 
 import com.example.Bankregistration.Entity.ApiPartner;
+import com.example.Bankregistration.Entity.ForgotPasswordOtpProperties;
 import com.example.Bankregistration.Entity.UserBankProperties;
 import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.Model.Request.AddBankAccountRequest;
@@ -39,10 +40,6 @@ public interface UserService {
 
     void validateBankDetails(AddBankAccountRequest request);
 
-    String getOtpForForgotPassword(UserProperties properties);
-
-    HashMap<Integer,String> validateOtp(String otp,String user_id);
-
     String getUserInfoFromCookies(HttpServletRequest request);
 
     UserBankProperties prepareBankDetails(UserProperties user, AddBankAccountRequest bankRequest);
@@ -54,4 +51,5 @@ public interface UserService {
     void removeBankAccount(String bankId);
 
     void checkForDuplicateBankAccount(AddBankAccountRequest bankRequest);
+
 }

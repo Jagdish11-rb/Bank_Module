@@ -186,47 +186,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String getOtpForForgotPassword(UserProperties properties) {
-        ForgotPasswordOtpProperties forgotPasswordOtpEntity = new ForgotPasswordOtpProperties();
-
-        Optional<ForgotPasswordOtpProperties> previousOtp = otpRepository.findById(properties.getUser_id());
-        if(!previousOtp.isEmpty()){
-            otpRepository.deleteById(properties.getUser_id());
-        }
-
-        forgotPasswordOtpEntity.setId(properties.getUser_id());
-        forgotPasswordOtpEntity.setOtp(backGroundService.generateOtp());
-        forgotPasswordOtpEntity.setGeneratedTime(LocalDateTime.now());
-        forgotPasswordOtpEntity.setExpiry(forgotPasswordOtpEntity.getGeneratedTime().plusMinutes(10));
-        log.info(String.valueOf(forgotPasswordOtpEntity));
-        otpRepository.save(forgotPasswordOtpEntity);
-
-        return forgotPasswordOtpEntity.getOtp();
-    }
-
-    @Override
-    public HashMap<Integer,String> validateOtp(String otp,String user_id) {
-        HashMap<Integer, String> map = new HashMap<>();
-        ForgotPasswordOtpProperties otpProperties = otpRepository.findById(user_id).orElse(null);
-        if(otpProperties!=null){
-            if(!(otpProperties.getOtp().matches(otp))){
-                map.clear();
-                map.put(-1,"Incorrect OTP.");
-            }else{
-                map.clear();
-                if(otpProperties.getExpiry().isBefore(LocalDateTime.now())){
-                    map.put(1,"OTP Expired.");
-                }else{
-                    map.put(0,"OTP verified.");
-                }
-            }
-        }else{
-            map.put(-1,"Invalid credentials.");
-        }
-        return map;
-    }
-
-    @Override
     public String getUserInfoFromCookies(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if(cookies==null){

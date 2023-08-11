@@ -1,6 +1,7 @@
 package com.example.Bankregistration.Controller;
 
 
+import com.example.Bankregistration.Entity.ForgotPasswordOtpProperties;
 import com.example.Bankregistration.Entity.UserBankProperties;
 import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.Exception.UserNotFoundException;
@@ -9,11 +10,13 @@ import com.example.Bankregistration.Pojo.PasswordChangeRequest;
 import com.example.Bankregistration.Pojo.RenewPassword;
 import com.example.Bankregistration.Service.BackGroundService;
 import com.example.Bankregistration.Service.EmailService;
+import com.example.Bankregistration.Service.OtpService;
 import com.example.Bankregistration.Service.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwt;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.User;
 import org.apache.tomcat.util.http.parser.HttpParser;
@@ -35,8 +38,9 @@ public class UserUpdateController {
 
     @Autowired
     private JwtGenerator jwtGenerator;
+
     @Autowired
-    private BackGroundService backGroundService;
+    private OtpService otpService;
 
     @Autowired
     private EmailService emailService;
@@ -68,12 +72,11 @@ public class UserUpdateController {
     }
 
     @PostMapping("/user/send-forgot-password-otp")
-    public ResponseEntity<?> sendForgotPasswordOtp(@CookieValue(value="user_cookie",required = false) String cookie) {
+    public ResponseEntity<?> sendForgotPasswordOtp(@RequestHeader("user_id") String user_id) {
         try {
-            String user_id = jwtGenerator.getDataFromToken(cookie).getId();
             UserProperties properties = userService.findUserById(user_id);
             if(properties!=null){
-                String otp = userService.getOtpForForgotPassword(properties);
+                String otp = otpService.getOtpForForgotPassword(properties);
                 emailService.sendForgotPasswordOtpEmail(properties,otp);
                 return new ResponseEntity<>("Forgot password otp sent to your email successfully.",HttpStatus.OK);
             }else{
@@ -85,11 +88,10 @@ public class UserUpdateController {
     }
 
     @PostMapping("/user/verify-forgot-password-otp")
-    public ResponseEntity<?> verifyForgotPasswordOtp(@RequestBody String otp,@CookieValue(value="user_cookie",required = false) String cookie){
+    public ResponseEntity<?> verifyForgotPasswordOtp(@RequestBody String otp,@RequestHeader("user_id") String user_id){
         try{
             String trimmedOtp = otp.trim();
-            String user_id = jwtGenerator.getDataFromToken(cookie).getId();
-            HashMap<Integer,String> map= userService.validateOtp(trimmedOtp,user_id);
+            HashMap<Integer,String> map= otpService.validateOtp(trimmedOtp,user_id);
             if(map.containsKey(0)){
                 return new ResponseEntity<>(map.get(0),HttpStatus.ACCEPTED);
             } else if(map.containsKey(1)){
@@ -103,21 +105,31 @@ public class UserUpdateController {
     }
 
     @PostMapping("/user/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody RenewPassword renewPassword,@CookieValue(value="user_cookie",required = false) String cookie){
+    public ResponseEntity<?> changePassword(@RequestBody RenewPassword renewPassword,@RequestHeader("user_id") String user_id){
         try{
-            String user_id = jwtGenerator.getDataFromToken(cookie).getId();
             UserProperties userProperties = userService.findUserById(user_id);
-            if(userProperties!=null){
-                if(renewPassword.getPassword().matches(renewPassword.getConfirmPassword())){
-                    userProperties.setPassword(renewPassword.getPassword());
-                    userService.saveUser(userProperties);
-                    return new ResponseEntity<>("Password changed successfully",HttpStatus.ACCEPTED);
+            ForgotPasswordOtpProperties otp = otpService.findOtpDetailsById(user_id);
+                if(userProperties!=null && otp!=null){
+                    if(otp.isOtpVerified()){
+                        if(otp.isPasswordChanged()!=true){
+                            if(renewPassword.getPassword().matches(renewPassword.getConfirmPassword())){
+                                userProperties.setPassword(renewPassword.getPassword());
+                                otp.setPasswordChanged(true);
+                                otpService.save(otp);
+                                userService.saveUser(userProperties);
+                                return new ResponseEntity<>("Password changed successfully",HttpStatus.ACCEPTED);
+                            }else{
+                                return new ResponseEntity<>("Password mismatch.",HttpStatus.NOT_ACCEPTABLE);
+                            }
+                        }else{
+                            return new ResponseEntity<>("Password already changed.",HttpStatus.UNAUTHORIZED);
+                        }
+                    }else{
+                        return new ResponseEntity<>("Otp is not verified.",HttpStatus.SERVICE_UNAVAILABLE);
+                    }
                 }else{
-                    return new ResponseEntity<>("Password mismatch.",HttpStatus.NOT_ACCEPTABLE);
+                    return new ResponseEntity<>("user or otp details not found",HttpStatus.NOT_FOUND);
                 }
-            }else{
-                return new ResponseEntity<>("user not found",HttpStatus.NOT_FOUND);
-            }
         }catch(Exception e){
             return new ResponseEntity<>("Exception occured.  Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
