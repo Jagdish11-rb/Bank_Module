@@ -2,11 +2,10 @@ package com.example.Bankregistration.Service.Impl;
 
 
 import com.example.Bankregistration.Entity.ApiPartner;
-import com.example.Bankregistration.Entity.ForgotPasswordOtpProperties;
 import com.example.Bankregistration.Entity.UserBankProperties;
 import com.example.Bankregistration.Entity.UserProperties;
 import com.example.Bankregistration.Exception.BankDetailsValidationException;
-import com.example.Bankregistration.Exception.DuplicateBankAccountException;
+import com.example.Bankregistration.Exception.BankDuplicacyException;
 import com.example.Bankregistration.Exception.InvalidCredentialsException;
 import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.AddBankAccountRequest;
@@ -29,7 +28,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 
 @Service
@@ -245,7 +243,7 @@ public class UserServiceImpl implements UserService {
     public void checkForDuplicateBankAccount(AddBankAccountRequest bankRequest) {
         UserBankProperties bankProperties = bankRepository.findByAccountNumber(bankRequest.getAccountNumber());
         if(bankProperties!=null){
-            throw new DuplicateBankAccountException("Bank account already added.");
+            throw new BankDuplicacyException("Bank account already added.");
         }
     }
 

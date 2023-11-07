@@ -3,6 +3,7 @@ package com.example.Bankregistration.Service.Impl;
 import com.example.Bankregistration.Entity.Admin;
 import com.example.Bankregistration.Entity.ApiPartner;
 import com.example.Bankregistration.Entity.UserProperties;
+import com.example.Bankregistration.Exception.CustomException;
 import com.example.Bankregistration.Exception.InvalidCredentialsException;
 import com.example.Bankregistration.Exception.UserNotFoundException;
 import com.example.Bankregistration.JWT.JwtGenerator;
@@ -36,23 +37,18 @@ public class AdminServiceImpl implements AdminService {
     private ApiService apiService;
 
     @Override
-    public boolean authorizeRequest(String secret_key) {
-        if (secret_key.matches(Utils.SECRET_CODE)) {
-            log.info("Request authorized.");
-            return true;
-        } else {
-            log.info("Can't authorize request.");
-            return false;
-        }
+    public void authorizeRequest(String secret_key) {
+        if(secret_key==null || secret_key.isEmpty()) throw new CustomException("Please provide a secret_key");
+        if(!(secret_key.matches(Utils.SECRET_CODE))) throw new CustomException("Please provide a valid secret_key");
     }
 
     @Override
-    public HashMap<Integer,String> onboardAdmin(AdminRequest adminRequest) {
+    public HashMap<Boolean,String> onboardAdmin(AdminRequest adminRequest) {
         log.info("Request received to onboard : " + adminRequest);
         Admin admin = adminRepository.findById(adminRequest.getId()).orElse(null);
-        HashMap<Integer,String> map = new HashMap<>();
+        HashMap<Boolean,String> map = new HashMap<>();
         if (!(admin==null)) {
-            map.put(1,"Admin already present with this given id.");
+            map.put(false,"Admin already present with this given id.");
             log.info("Admin already present with this given id.");
             return map;
         } else {
@@ -65,13 +61,13 @@ public class AdminServiceImpl implements AdminService {
                 newAdmin.setPassword(adminRequest.getPassword());
 
                 adminRepository.save(newAdmin);
-                map.put(0,"Admin onboarded successfully.");
+                map.put(true,"Admin onboarded successfully.");
                 log.info("Admin onboarded successfully.");
                 return map;
             } else {
                 map.clear();
                 log.info("Username already exists.");
-                map.put(-1,"Username already exists.");
+                map.put(false,"Username already exists.");
                 return map;
             }
         }
@@ -112,17 +108,9 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public Admin authenticateAdmin(LoginRequest loginRequest) {
+    public void authenticateAdmin(LoginRequest loginRequest) {
         Admin admin  = adminRepository.findById(loginRequest.getId()).orElse(null);
-        if(admin!=null){
-            boolean res = admin.getPassword().matches(loginRequest.getPassword());
-            if(res==true){
-                return admin;
-            }else{
-                throw new InvalidCredentialsException("Incorrect password.");
-            }
-        }else{
-            return admin;
-        }
+        if(admin==null || !(admin.getPassword().matches(loginRequest.getPassword())))
+            throw new InvalidCredentialsException("Invalid credentials");
     }
 }

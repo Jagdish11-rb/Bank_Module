@@ -25,7 +25,6 @@ import java.util.Optional;
 @Slf4j
 public class ApiController {
 
-
     @Autowired
     private ApiService apiService;
 
@@ -41,8 +40,7 @@ public class ApiController {
         ApiResponse apiResponse = new ApiResponse();
         try{
             log.info(token);
-            boolean isValid = jwtGenerator.validateToken(token);
-            if(isValid==true){
+            if(jwtGenerator.validateToken(token)){
                 Claims tokenData = jwtGenerator.getDataFromToken(token);
                 Optional<Admin> admin = adminService.findAdminById(tokenData.getId());
                 if(!admin.isEmpty()){

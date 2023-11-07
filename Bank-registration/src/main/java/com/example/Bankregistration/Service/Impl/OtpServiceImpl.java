@@ -1,33 +1,17 @@
 package com.example.Bankregistration.Service.Impl;
 
 
-import com.example.Bankregistration.Entity.ApiPartner;
 import com.example.Bankregistration.Entity.ForgotPasswordOtpProperties;
-import com.example.Bankregistration.Entity.UserBankProperties;
 import com.example.Bankregistration.Entity.UserProperties;
-import com.example.Bankregistration.Exception.BankDetailsValidationException;
-import com.example.Bankregistration.Exception.DuplicateBankAccountException;
-import com.example.Bankregistration.Exception.InvalidCredentialsException;
-import com.example.Bankregistration.JWT.JwtGenerator;
-import com.example.Bankregistration.Model.Request.AddBankAccountRequest;
-import com.example.Bankregistration.Model.Request.LoginRequest;
-import com.example.Bankregistration.Model.Request.UserRequest;
 import com.example.Bankregistration.Repository.OtpRepository;
-import com.example.Bankregistration.Repository.UserBankRepository;
-import com.example.Bankregistration.Repository.UserRepository;
 import com.example.Bankregistration.Service.*;
-import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 @Slf4j

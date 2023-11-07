@@ -2,6 +2,8 @@ package com.example.Bankregistration.Controller;
 
 import com.example.Bankregistration.Entity.Admin;
 import com.example.Bankregistration.Entity.ApiPartner;
+import com.example.Bankregistration.Exception.CustomException;
+import com.example.Bankregistration.Exception.InvalidCredentialsException;
 import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.AdminRequest;
 import com.example.Bankregistration.Model.Request.LoginRequest;
@@ -15,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -34,47 +38,46 @@ public class AdminController {
     @Autowired
     private ApiService apiService;
 
-
-
     @GetMapping("/welcome")
     public String message(){
         return "Welcome admin";
     }
 
     @PostMapping("/admin/onboard-admin")
-    public ResponseEntity<?> onboardAdmin(@Valid @RequestBody AdminRequest adminRequest, @RequestHeader("secret_key") String secret_key){
+    public ResponseEntity<?> onboardAdmin(@RequestBody @Valid AdminRequest adminRequest, BindingResult result,
+                                          @RequestHeader("secret_key") String secret_key){
 
         AdminResponse adminResponse = new AdminResponse();
-
+        log.info(secret_key);
         try{
-            boolean isValid = adminService.authorizeRequest(secret_key);
-            if(isValid==true){
-               HashMap<Integer,String> map =  adminService.onboardAdmin(adminRequest);
-                if(map.containsKey(0)){
-                    adminResponse.setAdmin_id(adminRequest.getId());
-                    adminResponse.setAdmin_user_name(adminRequest.getUser_name());
-                    adminResponse.setMessage("Admin onboarded successfully.");
-                    return new ResponseEntity<>(adminResponse, HttpStatus.CREATED);
-                }else if(map.containsKey(1)){
-                    adminResponse.setAdmin_id(adminRequest.getId());
-                    adminResponse.setAdmin_user_name(adminRequest.getUser_name());
-                    adminResponse.setMessage("Admin already present with this id.");
-                    return new ResponseEntity<>(adminResponse,HttpStatus.NOT_ACCEPTABLE);
-                }else{
-                    adminResponse.setAdmin_id(adminRequest.getId());
-                    adminResponse.setAdmin_user_name(adminRequest.getUser_name());
-                    adminResponse.setMessage("Username already exists.");
-                    return new ResponseEntity<>(adminResponse,HttpStatus.NOT_ACCEPTABLE);
-                }
+            if(result.hasErrors()){
+                FieldError fieldError = result.getFieldError();
+                adminResponse.setAdmin_id(null);
+                adminResponse.setAdmin_user_name(null);
+                adminResponse.setMessage(fieldError.getDefaultMessage());
+                return new ResponseEntity<>(adminResponse,HttpStatus.CONFLICT);
+            }
+            adminService.authorizeRequest(secret_key);
+            HashMap<Boolean,String> map = adminService.onboardAdmin(adminRequest);
+            if(map.containsKey(true)){
+                adminResponse.setAdmin_id(adminRequest.getId());
+                adminResponse.setAdmin_user_name(adminRequest.getUser_name());
+                adminResponse.setMessage(map.get(true));
+                return new ResponseEntity<>(adminResponse,HttpStatus.CREATED);
             }else{
                 adminResponse.setAdmin_id(adminRequest.getId());
                 adminResponse.setAdmin_user_name(adminRequest.getUser_name());
-                adminResponse.setMessage("Unauthorized request.");
-                return new ResponseEntity<>(adminResponse,HttpStatus.NON_AUTHORITATIVE_INFORMATION);
+                adminResponse.setMessage(map.get(false));
+                return new ResponseEntity<>(adminResponse,HttpStatus.NOT_ACCEPTABLE);
             }
+        }catch(CustomException ce){
+            adminResponse.setAdmin_id(null);
+            adminResponse.setAdmin_user_name(null);
+            adminResponse.setMessage(ce.getMessage());
+            return new ResponseEntity<>(adminResponse,HttpStatus.CONFLICT);
         }catch(Exception e){
-            adminResponse.setAdmin_id(adminRequest.getId());
-            adminResponse.setAdmin_user_name(adminRequest.getUser_name());
+            adminResponse.setAdmin_id(null);
+            adminResponse.setAdmin_user_name(null);
             adminResponse.setMessage(e.getMessage());
             return new ResponseEntity<>(adminResponse,HttpStatus.CONFLICT);
         }
@@ -83,35 +86,33 @@ public class AdminController {
 
     @GetMapping("/admin/get-all-admins")
     public List<String> getAdmins(@RequestHeader("secret_key") String secret_key){
-
-        List<String> list = new ArrayList<>();
+        List<String> adminList = new ArrayList<>();
         try{
-            boolean isValid = adminService.authorizeRequest(secret_key);
-            if(isValid==true){
-                list=adminService.getAllAdmins();
-                log.info(list.toString());
-            }
-        }catch(Exception e){
-                log.info("Exception occured while fetching database.");
+            adminService.authorizeRequest(secret_key);
+            adminList= adminService.getAllAdmins();
+            log.info(adminList.toString());
+        }catch(CustomException ce){
+            log.info(ce.getMessage());
+        } catch(Exception e){
+            log.info(e.getMessage());
         }
-        return list;
+        return adminList;
     }
 
     @PostMapping("admin/admin-login")
     public ResponseEntity<?> adminLogin(@RequestBody LoginRequest loginRequest, HttpServletResponse response){
         try{
-            Admin admin = adminService.authenticateAdmin(loginRequest);
-            if(admin!=null){
-                String token = jwtGenerator.generateToken(loginRequest);
-                log.info(token);
-                Cookie cookie = new Cookie("my_admin_cookie",token);
-                cookie.setHttpOnly(true);
-                cookie.setMaxAge((int) (jwtGenerator.getExpiration()/100));
-                response.addCookie(cookie);
-                return new ResponseEntity<>("Admin logged in successfully.",HttpStatus.ACCEPTED);
-            }else{
-                return new ResponseEntity<>("Invalid credentials",HttpStatus.NOT_ACCEPTABLE);
-            }
+            adminService.authenticateAdmin(loginRequest);
+
+            String token = jwtGenerator.generateToken(loginRequest);
+            log.info(token);
+            Cookie cookie = new Cookie("my_admin_cookie",token);
+            cookie.setHttpOnly(true);
+            cookie.setMaxAge((int) (jwtGenerator.getExpiration()/100));
+            response.addCookie(cookie);
+            return new ResponseEntity<>("Admin logged in successfully.",HttpStatus.ACCEPTED);
+        }catch(InvalidCredentialsException ie){
+            return new ResponseEntity<>("Exception occured while logging in admin.  Reason : "+ie.getMessage(),HttpStatus.CONFLICT);
         }catch(Exception e){
             return new ResponseEntity<>("Exception occured while logging in admin.  Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
@@ -121,8 +122,7 @@ public class AdminController {
     public ResponseEntity<?> getAdminDetails(@CookieValue(value="my_admin_cookie",required = false) String cookie){
         try{
             log.info(cookie);
-            boolean isValid = jwtGenerator.validateToken(cookie);
-            if(isValid==true){
+            if(jwtGenerator.validateToken(cookie)){
                 String adminId = jwtGenerator.getDataFromToken(cookie).getId();
                 Admin admin = adminService.findAdminById(adminId).orElse(null);
                 if(admin!=null){
@@ -148,15 +148,15 @@ public class AdminController {
             }else{
                 List<String> apiUsers = adminService.getAllApiUsersOfAnAdmin(adminId);
                 log.info(apiUsers.toString());
-                for(int i=0;i<apiUsers.size();i++){
-                    ApiPartner apiPartner = adminService.findApiUserByName(apiUsers.get(i));
+                for(String apiUser : apiUsers){
+                    ApiPartner apiPartner = adminService.findApiUserByName(apiUser);
                     adminService.changeDetailsOfApiUser(apiPartner);
                 }
                 adminService.removeAdmin(admin);
                 return new ResponseEntity<>("Admin removed successfully.",HttpStatus.ACCEPTED);
             }
         }catch(Exception e){
-            return new ResponseEntity<>("Exception occured while deleting admin. Reason >>>>"+e.getMessage(),HttpStatus.CONFLICT);
+            return new ResponseEntity<>("Exception occured while removing admin. Reason >>>>"+e.getMessage(),HttpStatus.CONFLICT);
         }
     }
 

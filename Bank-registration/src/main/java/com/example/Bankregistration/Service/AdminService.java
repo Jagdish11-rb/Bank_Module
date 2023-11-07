@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AdminService{
-    boolean authorizeRequest(String secret_key);
+    void authorizeRequest(String secret_key);
 
-    HashMap<Integer,String> onboardAdmin(AdminRequest adminRequest);
+    HashMap<Boolean,String> onboardAdmin(AdminRequest adminRequest);
 
     Optional<Admin> findAdminById(String id);
 
@@ -28,5 +28,5 @@ public interface AdminService{
 
     void changeDetailsOfApiUser(ApiPartner apiPartner);
 
-    Admin authenticateAdmin(LoginRequest loginRequest);
+    void authenticateAdmin(LoginRequest loginRequest);
 }
