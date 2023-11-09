@@ -16,7 +16,7 @@ public interface OtpService {
 
     ForgotPasswordOtpProperties findOtpDetailsById(String userId);
 
-    HashMap<Integer,String> validateOtp(String otp,String user_id);
+    HashMap<Boolean,String> validateOtp(String otp,String user_id);
 
     String getOtpForForgotPassword(UserProperties properties);
 

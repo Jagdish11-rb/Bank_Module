@@ -17,12 +17,14 @@ import io.jsonwebtoken.Jwt;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.User;
 import org.apache.tomcat.util.http.parser.HttpParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.UnsatisfiedServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,13 +48,12 @@ public class UserUpdateController {
     private EmailService emailService;
 
     @PostMapping("/user/update-user-password-using-oldpassword")
-    public ResponseEntity<?> updateUser(@RequestBody PasswordChangeRequest request, @CookieValue(value="user_cookie",required = false) String cookie){
+    public ResponseEntity<?> updatePasswordUsingOldPassword(@RequestBody PasswordChangeRequest request, @CookieValue(value="user_cookie",required = false) String cookie){
         try{
             String userId = jwtGenerator.getDataFromToken(cookie).getId();
             UserProperties user = userService.getproperties(userId);
                 if(user!=null){
-                    boolean res = user.getPassword().matches(request.getOldPassword());
-                    if(res!=true){
+                    if(!(user.getPassword().matches(request.getOldPassword()))){
                         return new ResponseEntity<>("Incorrect old password",HttpStatus.NOT_ACCEPTABLE);
                     }else{
                         if(!request.getOldPassword().matches(request.getNewPassword())){
@@ -91,13 +92,11 @@ public class UserUpdateController {
     public ResponseEntity<?> verifyForgotPasswordOtp(@RequestBody String otp,@RequestHeader("user_id") String user_id){
         try{
             String trimmedOtp = otp.trim();
-            HashMap<Integer,String> map= otpService.validateOtp(trimmedOtp,user_id);
-            if(map.containsKey(0)){
-                return new ResponseEntity<>(map.get(0),HttpStatus.ACCEPTED);
-            } else if(map.containsKey(1)){
-                return new ResponseEntity<>(map.get(1),HttpStatus.REQUEST_TIMEOUT);
+            HashMap<Boolean,String> map= otpService.validateOtp(trimmedOtp,user_id);
+            if(map.containsKey(true)){
+                return new ResponseEntity<>(map.get(true),HttpStatus.ACCEPTED);
             } else{
-                return new ResponseEntity<>(map.get(-1),HttpStatus.NOT_ACCEPTABLE);
+                return new ResponseEntity<>(map.get(false),HttpStatus.NOT_ACCEPTABLE);
             }
         }catch(Exception e){
             return new ResponseEntity<>("Exception occured.  Reason :"+e.getMessage(),HttpStatus.CONFLICT);
@@ -105,8 +104,11 @@ public class UserUpdateController {
     }
 
     @PostMapping("/user/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody RenewPassword renewPassword,@RequestHeader("user_id") String user_id){
+    public ResponseEntity<?> changePassword(@Valid @RequestBody RenewPassword renewPassword, BindingResult result, @RequestHeader("user_id") String user_id){
         try{
+            if(result.hasErrors()){
+                return new ResponseEntity<>(result.getFieldError().getDefaultMessage(),HttpStatus.BAD_REQUEST);
+            }
             UserProperties userProperties = userService.findUserById(user_id);
             ForgotPasswordOtpProperties otp = otpService.findOtpDetailsById(user_id);
                 if(userProperties!=null && otp!=null){

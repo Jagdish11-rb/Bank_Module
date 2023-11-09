@@ -13,8 +13,6 @@ import com.example.Bankregistration.RegUtils.Utils;
 import com.example.Bankregistration.Repository.AdminRepository;
 import com.example.Bankregistration.Service.AdminService;
 import com.example.Bankregistration.Service.ApiService;
-import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

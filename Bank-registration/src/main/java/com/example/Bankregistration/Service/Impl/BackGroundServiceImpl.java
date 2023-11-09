@@ -30,9 +30,9 @@ public class BackGroundServiceImpl implements BackGroundService {
         int num = random.nextInt(999);
         String id = userName.concat(String.valueOf(num));
         Optional<UserProperties> user = userRepository.findById(id);
-        if(!user.isEmpty()){
+        if(!user.isEmpty())
             return generateUserId(userRequest);
-        }
+
         return id;
     }
 

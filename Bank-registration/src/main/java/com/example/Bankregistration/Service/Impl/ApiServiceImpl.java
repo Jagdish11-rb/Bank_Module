@@ -31,37 +31,32 @@ public class ApiServiceImpl implements ApiService {
 
 
     @Override
-    public HashMap<Integer,String> onboardApiPartner(ApiRequest apiRequest, Claims tokenData) {
+    public HashMap<Boolean,String> onboardApiPartner(ApiRequest apiRequest, Claims tokenData) {
         log.info("Request received to onboard : " + apiRequest);
-        ApiPartner apiPartner = apiRepository.findById(apiRequest.getApi_user_id()).orElse(null);
-        HashMap<Integer,String> map = new HashMap();
-        if (!(apiPartner==null)) {
+        HashMap<Boolean,String> map = new HashMap();
+        Optional<ApiPartner> apiPartner=apiRepository.findById(apiRequest.getApi_user_id());
+        if (!apiPartner.isEmpty()) {
             log.info("ApiPartner already present with this given id.");
-            map.put(1,"ApiPartner already present with this given id.");
-            return map;
+            map.put(false,"ApiPartner already present with this given id.");
         } else {
-            map.clear();
-            ApiPartner apiPartner2 = apiRepository.findByUsername(apiRequest.getApi_user_name()).orElse(null);
-            if (apiPartner2==null) {
-                ApiPartner newApiPartner = new ApiPartner();
+            apiPartner=apiRepository.findByUsername(apiRequest.getApi_user_name());
+            if (apiPartner.isEmpty()) {
+                ApiPartner apiPartnerNew = new ApiPartner();
+                apiPartnerNew.setId(apiRequest.getApi_user_id());
+                apiPartnerNew.setUsername(apiRequest.getApi_user_name());
+                apiPartnerNew.setAdminName(tokenData.getSubject());
+                apiPartnerNew.setAdminId(tokenData.getId());
+                apiPartnerNew.setActive(true);
 
-                newApiPartner.setId(apiRequest.getApi_user_id());
-                newApiPartner.setUsername(apiRequest.getApi_user_name());
-                newApiPartner.setAdminName(tokenData.getSubject());
-                newApiPartner.setAdminId(tokenData.getId());
-                newApiPartner.setActive(true);
-
-                apiRepository.save(newApiPartner);
+                apiRepository.save(apiPartnerNew);
                 log.info("ApiPartner onboarded successfully.");
-                map.put(0,"ApiPartner onboarded successfully.");
-                return map;
+                map.put(true,"ApiPartner onboarded successfully.");
             } else {
-                map.clear();
                 log.info("Username already exists.");
-                map.put(-1,"Username already exists.");
-                return map;
+                map.put(false,"Username already exists.");
             }
         }
+        return map;
     }
 
     @Override

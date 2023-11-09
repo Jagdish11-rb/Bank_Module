@@ -38,6 +38,7 @@ public class AdminController {
     @Autowired
     private ApiService apiService;
 
+
     @GetMapping("/welcome")
     public String message(){
         return "Welcome admin";
@@ -85,7 +86,7 @@ public class AdminController {
     }
 
     @GetMapping("/admin/get-all-admins")
-    public List<String> getAdmins(@RequestHeader("secret_key") String secret_key){
+    public ResponseEntity<?> getAdmins(@RequestHeader("secret_key") String secret_key){
         List<String> adminList = new ArrayList<>();
         try{
             adminService.authorizeRequest(secret_key);
@@ -93,10 +94,12 @@ public class AdminController {
             log.info(adminList.toString());
         }catch(CustomException ce){
             log.info(ce.getMessage());
+            return new ResponseEntity<>(ce.getMessage(),HttpStatus.CONFLICT);
         } catch(Exception e){
             log.info(e.getMessage());
+            return new ResponseEntity<>(e.getMessage(),HttpStatus.CONFLICT);
         }
-        return adminList;
+        return new ResponseEntity<>(adminList,HttpStatus.ACCEPTED);
     }
 
     @PostMapping("admin/admin-login")

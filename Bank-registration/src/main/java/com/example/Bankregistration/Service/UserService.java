@@ -18,11 +18,11 @@ public interface UserService {
 
     ApiPartner getApiUserInfo(String apiUserName);
 
-    HashMap<Integer, String> onboardUser(UserRequest userRequest, ApiPartner apiPartner);
+    HashMap<Boolean, String> onboardUser(UserRequest userRequest, ApiPartner apiPartner);
 
     List<String> findAllOnboardedUsers();
 
-    String getApiUser();
+    ApiPartner getApiUser();
 
     UserProperties authenticateUser(LoginRequest loginRequest);
 

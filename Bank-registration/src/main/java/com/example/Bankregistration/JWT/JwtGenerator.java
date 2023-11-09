@@ -1,5 +1,6 @@
 package com.example.Bankregistration.JWT;
 
+import com.example.Bankregistration.Exception.CustomException;
 import com.example.Bankregistration.Model.Request.AdminRequest;
 import com.example.Bankregistration.Model.Request.LoginRequest;
 import io.jsonwebtoken.Claims;
@@ -53,7 +54,8 @@ public class JwtGenerator implements JwtGeneratorInterface{
     }
 
     public Claims getDataFromToken(String auth) {
-        Claims claims=Jwts.parser().setSigningKey(secret).parseClaimsJws(auth).getBody();;
+        Claims claims=Jwts.parser().setSigningKey(secret).parseClaimsJws(auth).getBody();
+        if(claims.isEmpty()) throw new CustomException("Couldn't fetch data.");
         return claims;
     }
 

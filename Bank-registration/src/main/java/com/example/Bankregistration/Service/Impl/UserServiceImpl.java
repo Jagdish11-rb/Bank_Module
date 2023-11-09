@@ -71,14 +71,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public HashMap<Integer, String> onboardUser(UserRequest userRequest, ApiPartner apiPartner) {
+    public HashMap<Boolean, String> onboardUser(UserRequest userRequest, ApiPartner apiPartner) {
         log.info("Request received to onbaord user : "+userRequest);
         UserProperties userEntity = userRepository.findByMobileNumber(userRequest.getMobileNumber()).orElse(null);
-        HashMap<Integer,String> map = new HashMap<>();
+        HashMap<Boolean,String> map = new HashMap<>();
         if(userEntity!=null){
-            map.put(1,null);
+            map.put(false,"User already registered with this mobile number. Please try again with another mobile number.");
         }else {
-            map.clear();
             UserProperties properties = new UserProperties();
             properties.setUser_id(backGroundService.generateUserId(userRequest));
             properties.setApi_user_id(apiPartner.getId());
@@ -100,7 +99,7 @@ public class UserServiceImpl implements UserService {
 
             userRepository.save(properties);
             emailService.sendAfterRegisterEmail(properties);
-            map.put(0,properties.getUser_id());
+            map.put(true,properties.getUser_id());
         }
         return map;
     }
@@ -111,17 +110,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String getApiUser() {
+    public ApiPartner getApiUser() {
         List<String> apiUserList = apiService.retreiveApiPartners();
         Random random = new Random();
         int index = random.nextInt(apiUserList.size());
-        String api_user_name = apiUserList.get(index);
-        ApiPartner apiPartner = apiService.findApiUserByName(api_user_name);
-        if(apiPartner.isActive()==false){
+        ApiPartner apiPartner = apiService.findApiUserByName(apiUserList.get(index));
+        if(apiPartner.isActive()!=true)
             return getApiUser();
-        }else{
-            return api_user_name;
-        }
+
+        return apiPartner;
     }
 
     @Override

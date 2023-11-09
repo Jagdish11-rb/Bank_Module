@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface ApiService {
 
-    HashMap<Integer,String> onboardApiPartner(ApiRequest apiRequest, Claims tokenData);
+    HashMap<Boolean,String> onboardApiPartner(ApiRequest apiRequest, Claims tokenData);
 
     List<String> retreiveApiPartners();
 

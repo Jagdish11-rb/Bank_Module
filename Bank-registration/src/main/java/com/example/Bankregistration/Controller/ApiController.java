@@ -2,6 +2,7 @@ package com.example.Bankregistration.Controller;
 
 import com.example.Bankregistration.Entity.Admin;
 import com.example.Bankregistration.Entity.ApiPartner;
+import com.example.Bankregistration.Exception.CustomException;
 import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.ApiRequest;
 import com.example.Bankregistration.Model.Response.ApiResponse;
@@ -10,10 +11,12 @@ import com.example.Bankregistration.Service.ApiService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -36,43 +39,46 @@ public class ApiController {
 
 
     @PostMapping("/admin/onboard-api-user")
-    public ResponseEntity<?> onboardApiUser(@RequestBody ApiRequest apiRequest,@CookieValue(value="my_admin_cookie",required = false) String token){
+    public ResponseEntity<?> onboardApiUser(@Valid @RequestBody ApiRequest apiRequest, BindingResult result, @CookieValue(value="my_admin_cookie",required = false) String token){
         ApiResponse apiResponse = new ApiResponse();
         try{
+            if(result.hasErrors()){
+                apiResponse.setApi_user_id(apiRequest.getApi_user_id());
+                apiResponse.setApi_user_name(apiRequest.getApi_user_name());
+                apiResponse.setMessage(result.getFieldError().getDefaultMessage());
+                return new ResponseEntity<>(apiResponse,HttpStatus.BAD_REQUEST);
+            }
             log.info(token);
             if(jwtGenerator.validateToken(token)){
                 Claims tokenData = jwtGenerator.getDataFromToken(token);
                 Optional<Admin> admin = adminService.findAdminById(tokenData.getId());
-                if(!admin.isEmpty()){
-                    HashMap<Integer,String> map = apiService.onboardApiPartner(apiRequest,tokenData);
-                    if(map.containsKey(0)){
-                        apiResponse.setApi_user_id(apiRequest.getApi_user_id());
-                        apiResponse.setApi_user_name(apiRequest.getApi_user_name());
-                        apiResponse.setMessage("ApiPartner onboarded successfully.");
-                        return new ResponseEntity<>(apiResponse, HttpStatus.CREATED);
-                    }else if(map.containsKey(1)){
-                        apiResponse.setApi_user_id(apiRequest.getApi_user_id());
-                        apiResponse.setApi_user_name(apiRequest.getApi_user_name());
-                        apiResponse.setMessage("ApiPartner already present with this id.");
-                        return new ResponseEntity<>(apiResponse,HttpStatus.NOT_ACCEPTABLE);
-                    }else{
-                        apiResponse.setApi_user_id(apiRequest.getApi_user_id());
-                        apiResponse.setApi_user_name(apiRequest.getApi_user_name());
-                        apiResponse.setMessage("Api username already exists.");
-                        return new ResponseEntity<>(apiResponse,HttpStatus.NOT_ACCEPTABLE);
-                    }
+
+                if(admin.isEmpty())
+                    throw new CustomException("Couldn't fetch admin details.");
+
+                HashMap<Boolean,String> map = apiService.onboardApiPartner(apiRequest,tokenData);
+                if(map.containsKey(true)){
+                    apiResponse.setApi_user_id(apiRequest.getApi_user_id());
+                    apiResponse.setApi_user_name(apiRequest.getApi_user_name());
+                    apiResponse.setMessage(map.get(true));
+                    return new ResponseEntity<>(apiResponse, HttpStatus.CREATED);
                 }else{
                     apiResponse.setApi_user_id(apiRequest.getApi_user_id());
                     apiResponse.setApi_user_name(apiRequest.getApi_user_name());
-                    apiResponse.setMessage("Admin details not found.");
-                    return new ResponseEntity<>(apiResponse,HttpStatus.NOT_FOUND);
+                    apiResponse.setMessage(map.get(false));
+                    return new ResponseEntity<>(apiResponse,HttpStatus.NOT_ACCEPTABLE);
                 }
-            }else{
+            } else{
                 apiResponse.setApi_user_id(apiRequest.getApi_user_id());
                 apiResponse.setApi_user_name(apiRequest.getApi_user_name());
                 apiResponse.setMessage("Invalid token or Token expired.");
                 return new ResponseEntity<>(apiResponse,HttpStatus.NOT_ACCEPTABLE);
             }
+        }catch(CustomException ce){
+            apiResponse.setApi_user_id(apiRequest.getApi_user_id());
+            apiResponse.setApi_user_name(apiRequest.getApi_user_name());
+            apiResponse.setMessage(ce.getMessage());
+            return new ResponseEntity<>(apiResponse,HttpStatus.CONFLICT);
         }catch(Exception e){
             apiResponse.setApi_user_id(apiRequest.getApi_user_id());
             apiResponse.setApi_user_name(apiRequest.getApi_user_name());
@@ -95,8 +101,7 @@ public class ApiController {
     public ResponseEntity<?> removeApiUser(@PathVariable String id,@CookieValue(value="my_admin_cookie",required = false) String token){
         try{
             log.info(token);
-            boolean isValid = jwtGenerator.validateToken(token);
-            if(isValid==true){
+            if(jwtGenerator.validateToken(token)){
                 Optional<ApiPartner> apiPartner = apiService.findApiuserById(id);
                 if(!apiPartner.isEmpty()){
                     Claims tokenData = jwtGenerator.getDataFromToken(token);
@@ -114,7 +119,7 @@ public class ApiController {
                 return new ResponseEntity<>("Invalid token.",HttpStatus.NOT_ACCEPTABLE);
             }
         }catch(Exception e){
-            return new ResponseEntity<>("Exception occured. Reason >>>>>>>> "+e.getMessage(),HttpStatus.CONFLICT);
+            return new ResponseEntity<>("Exception occured. \nReason >>>>>>>> "+e.getMessage(),HttpStatus.CONFLICT);
         }
     }
 
@@ -134,7 +139,7 @@ public class ApiController {
                 return new ResponseEntity<>("Api user not found.",HttpStatus.NOT_FOUND);
             }
         }catch(Exception e){
-            return new ResponseEntity<>("Exception occured while activating api user.  Reason  >>>>>>"+e.getMessage(),HttpStatus.CONFLICT);
+            return new ResponseEntity<>("Exception occured while activating api user.\nReason  >>>>>>"+e.getMessage(),HttpStatus.CONFLICT);
         }
 
     }

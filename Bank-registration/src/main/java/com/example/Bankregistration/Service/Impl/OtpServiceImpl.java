@@ -54,24 +54,24 @@ public class OtpServiceImpl implements OtpService {
     }
 
     @Override
-    public HashMap<Integer,String> validateOtp(String otp,String user_id) {
-        HashMap<Integer, String> map = new HashMap<>();
+    public HashMap<Boolean,String> validateOtp(String otp,String user_id) {
+        HashMap<Boolean, String> map = new HashMap<>();
         ForgotPasswordOtpProperties otpProperties = otpRepository.findById(user_id).orElse(null);
         if(otpProperties!=null){
             if(!(otpProperties.getOtp().matches(otp))){
-                map.clear();
-                map.put(-1,"Incorrect OTP.");
+                map.put(false,"Incorrect OTP.");
             }else{
                 map.clear();
                 if(otpProperties.getExpiry().isBefore(LocalDateTime.now())){
+                    map.put(false,"OTP expired.");
                 }else{
                     otpProperties.setOtpVerified(true);
                     otpRepository.save(otpProperties);
-                    map.put(0,"OTP verified.");
+                    map.put(true,"OTP verified.");
                 }
             }
         }else{
-            map.put(-1,"Invalid credentials.");
+            map.put(false,"Invalid credentials.");
         }
         return map;
     }

@@ -3,6 +3,7 @@ package com.example.Bankregistration.Controller;
 import com.example.Bankregistration.Entity.ApiPartner;
 import com.example.Bankregistration.Entity.UserBankProperties;
 import com.example.Bankregistration.Entity.UserProperties;
+import com.example.Bankregistration.Exception.CustomException;
 import com.example.Bankregistration.JWT.JwtGenerator;
 import com.example.Bankregistration.Model.Request.AddBankAccountRequest;
 import com.example.Bankregistration.Model.Request.LoginRequest;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -36,22 +38,27 @@ public class UserController {
     private JwtGenerator jwtGenerator;
 
     @PostMapping("/user/onboard-user")
-    public ResponseEntity<?> onboardUser(@Valid @RequestBody UserRequest userRequest){
+    public ResponseEntity<?> onboardUser(@Valid @RequestBody UserRequest userRequest, BindingResult result){
         UserResponse response = new UserResponse();
-        String api_user_name = userService.getApiUser();
         try{
-            ApiPartner apiPartner = userService.getApiUserInfo(api_user_name);
-            HashMap<Integer,String> map = userService.onboardUser(userRequest,apiPartner);
-            if(map.containsKey(0)){
-                response.setId(map.get(0));
+            if(result.hasErrors()){
+                response.setId(null);
                 response.setName(userRequest.getName());
-                response.setApi_user_name(api_user_name);
+                response.setResponse(result.getFieldError().getDefaultMessage());
+                return new ResponseEntity<>(response,HttpStatus.BAD_REQUEST);
+            }
+            ApiPartner apiPartner = userService.getApiUser();
+            HashMap<Boolean,String> map = userService.onboardUser(userRequest,apiPartner);
+            if(map.containsKey(true)){
+                response.setId(map.get(true));
+                response.setName(userRequest.getName());
+                response.setApi_user_name(apiPartner.getUsername());
                 response.setResponse("User onboarded successfully.");
                 return new ResponseEntity<>(response,HttpStatus.CREATED);
             }else{
                 response.setId(null);
                 response.setName(userRequest.getName());
-                response.setResponse("User already present with this mobile number. Please try again with another mobile number.");
+                response.setResponse(map.get(false));
                 return new ResponseEntity<>(response,HttpStatus.NOT_ACCEPTABLE);
             }
         }catch(Exception e){
@@ -63,8 +70,11 @@ public class UserController {
     }
 
     @PostMapping("user/add-bank-account")
-    public ResponseEntity<?> addBankAccount(@RequestBody AddBankAccountRequest bankRequest , @CookieValue(value="user_cookie",required = false) String cookie){
+    public ResponseEntity<?> addBankAccount(@Valid @RequestBody AddBankAccountRequest bankRequest,BindingResult result , @CookieValue(value="user_cookie",required = false) String cookie){
         try{
+            if(result.hasErrors())
+                return new ResponseEntity<>(result.getFieldError().getDefaultMessage(),HttpStatus.BAD_REQUEST);
+
             String userId = jwtGenerator.getDataFromToken(cookie).getId();
             UserProperties user = userService.findUserById(userId);
             if(user!=null){
@@ -77,12 +87,10 @@ public class UserController {
                     response.setVpa(userBankProperties.getVpa());
                     response.setMessage("Bank account added successfully.");
                     return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
-                }else{
-                    return new ResponseEntity<>("Something went wrong.",HttpStatus.NOT_ACCEPTABLE);
-                }
-            }else{
-                return new ResponseEntity<>("User not found.",HttpStatus.NOT_FOUND);
-            }
+                }else return new ResponseEntity<>("Something went wrong.",HttpStatus.NOT_ACCEPTABLE);
+            }else return new ResponseEntity<>("User not found.",HttpStatus.NOT_FOUND);
+        }catch(CustomException ce){
+            return new ResponseEntity<>("Exception occured while adding bank account . Reason : "+ce.getMessage(),HttpStatus.CONFLICT);
         }catch(Exception e){
             return new ResponseEntity<>("Exception occured while adding bank account . Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
@@ -136,19 +144,15 @@ public class UserController {
     @PostMapping("/user/get-logged-in-user-details")
     public ResponseEntity<?> getUserDetails(@CookieValue(value="user_cookie",required = false) String cookie,HttpServletRequest request) {
         try{
-            boolean isValid = jwtGenerator.validateToken(cookie);
-            if (isValid == true) {
+            if (jwtGenerator.validateToken(cookie)) {
                 Claims claims = jwtGenerator.getDataFromToken(cookie);
-                String userId = claims.getId();
-                UserProperties user = userService.findUserById(userId);
+                UserProperties user = userService.findUserById(claims.getId());
                 if(user!=null){
                     return new ResponseEntity<>(user,HttpStatus.ACCEPTED);
                 }else{
                     return new ResponseEntity<>("User not found",HttpStatus.NOT_FOUND);
                 }
-            }else{
-                return new ResponseEntity<>("Token expired",HttpStatus.GONE);
-            }
+            }else return new ResponseEntity<>("Token expired",HttpStatus.GONE);
         }catch(Exception e){
             return new ResponseEntity<>("Exception occured. Reason : "+e.getMessage(),HttpStatus.CONFLICT);
         }
@@ -196,8 +200,7 @@ public class UserController {
     public ResponseEntity<?> deleteAccount(@CookieValue(value="user_cookie",required = false) String cookie){
         try{
             Claims claims = jwtGenerator.getDataFromToken(cookie);
-            String id = claims.getId();
-            UserProperties user = userService.findUserById(id);
+            UserProperties user = userService.findUserById(claims.getId());
             if(user!=null){
                 userService.removeUser(user);
                 return new ResponseEntity<>("Account deleted.",HttpStatus.ACCEPTED);
