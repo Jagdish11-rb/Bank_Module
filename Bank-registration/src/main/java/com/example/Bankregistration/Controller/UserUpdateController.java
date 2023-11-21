@@ -106,6 +106,7 @@ public class UserUpdateController {
     @PostMapping("/user/change-password")
     public ResponseEntity<?> changePassword(@Valid @RequestBody RenewPassword renewPassword, BindingResult result, @RequestHeader("user_id") String user_id){
         try{
+
             if(result.hasErrors()){
                 return new ResponseEntity<>(result.getFieldError().getDefaultMessage(),HttpStatus.BAD_REQUEST);
             }
